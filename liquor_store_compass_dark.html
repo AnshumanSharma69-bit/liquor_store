@@ -1,121 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0f0e11"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Spirits Finder"/>
+  <meta name="description" content="Live compass to the nearest liquor store near you."/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <link rel="icon" href="/icons/icon-192.png"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css"/>
+  <title>Spirits Finder</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; background: #0f0e11; color: #f0eefc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overscroll-behavior: none;
+    }
+    #app {
+      max-width: 430px; margin: 0 auto;
+      min-height: 100dvh;
+      background: #0f0e11;
+      display: flex; flex-direction: column;
+    }
+    /* Header */
+    #header {
+      background: #1a1820;
+      border-bottom: 0.5px solid #2e2b38;
+      padding: 52px 20px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .icon-wrap {
+      width: 40px; height: 40px; background: #D85A30;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .icon-wrap i { font-size: 22px; color: #fff; }
+    #header h1 { font-size: 18px; font-weight: 600; color: #f0eefc; }
+    #header p  { font-size: 12px; color: #7a758f; margin-top: 2px; }
 
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  #app {
-    font-family: var(--font-sans);
-    min-height: 700px;
-    background: #0f0e11;
-    border-radius: 24px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-  #header {
-    background: #1a1820;
-    border-bottom: 0.5px solid #2e2b38;
-    padding: 18px 20px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  #header .icon-wrap {
-    width: 38px; height: 38px;
-    background: #D85A30;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  #header .icon-wrap i { font-size: 20px; color: #fff; }
-  #header h1 { font-size: 17px; font-weight: 500; color: #f0eefc; }
-  #header p { font-size: 12px; color: #7a758f; margin-top: 1px; }
-  #status-bar {
-    background: #1a1820;
-    margin: 12px 12px 0;
-    border-radius: 14px;
-    border: 0.5px solid #2e2b38;
-    padding: 12px 16px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: #639922; flex-shrink: 0; }
-  #status-text { font-size: 13px; color: #7a758f; flex: 1; }
-  #store-name { font-size: 13px; font-weight: 500; color: #c9b8f5; text-align: right; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #compass-area {
-    flex: 1;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 28px 20px 20px;
-    gap: 22px;
-  }
-  #compass-card {
-    background: #1a1820;
-    border-radius: 50%;
-    border: 1.5px solid #2e2b38;
-    width: 240px; height: 240px;
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-    box-shadow: 0 0 0 8px #14121a, 0 0 0 9px #2e2b38;
-  }
-  #compass-svg { width: 210px; height: 210px; position: absolute; }
-  #needle-group { transform-origin: 105px 105px; transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
-  #bearing-arrow { transform-origin: 105px 105px; transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
-  #distance-badge {
-    background: #D85A30;
-    border-radius: 40px;
-    padding: 10px 24px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  #distance-badge i { font-size: 18px; color: #fff; }
-  #dist-val { font-size: 24px; font-weight: 500; color: #fff; }
-  #dist-unit { font-size: 13px; color: #f5c4b3; margin-top: 2px; }
-  #info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    width: 100%;
-    padding: 0 12px 12px;
-  }
-  .info-card {
-    background: #1a1820;
-    border: 0.5px solid #2e2b38;
-    border-radius: 14px;
-    padding: 12px 14px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .info-card i { font-size: 20px; color: #534AB7; }
-  .info-card .label { font-size: 11px; color: #7a758f; }
-  .info-card .value { font-size: 14px; font-weight: 500; color: #f0eefc; margin-top: 2px; }
-  #locate-btn {
-    margin: 0 12px 16px;
-    width: calc(100% - 24px);
-    background: #D85A30;
-    border: none;
-    border-radius: 14px;
-    padding: 15px;
-    color: #fff;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  #locate-btn:hover { background: #993C1D; }
-  #locate-btn i { font-size: 18px; }
-  #permission-msg {
-    background: #1a1820;
-    border: 0.5px solid #534AB7;
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin: 0 12px 12px;
-    font-size: 12px;
-    color: #AFA9EC;
-    display: none;
-  }
-</style>
+    /* Status bar */
+    #status-bar {
+      background: #1a1820; margin: 12px 12px 0;
+      border-radius: 14px; border: 0.5px solid #2e2b38;
+      padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    }
+    #status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #444; flex-shrink: 0; transition: background 0.4s;
+    }
+    #status-text { font-size: 13px; color: #7a758f; flex: 1; }
+    #store-name  {
+      font-size: 13px; font-weight: 500; color: #c9b8f5;
+      text-align: right; max-width: 140px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
+    /* Compass */
+    #compass-area {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 28px 20px 20px; gap: 22px;
+    }
+    #compass-card {
+      background: #1a1820; border-radius: 50%;
+      border: 1.5px solid #2e2b38;
+      width: 240px; height: 240px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      box-shadow: 0 0 0 8px #14121a, 0 0 0 9px #2e2b38;
+    }
+    #compass-svg { width: 210px; height: 210px; position: absolute; }
+    #needle-group  { transform-origin: 105px 105px; transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+    #bearing-arrow { transform-origin: 105px 105px; transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+
+    /* Distance badge */
+    #distance-badge {
+      background: #D85A30; border-radius: 40px;
+      padding: 10px 24px; display: flex; align-items: center; gap: 10px;
+    }
+    #distance-badge i { font-size: 18px; color: #fff; }
+    #dist-val  { font-size: 24px; font-weight: 600; color: #fff; }
+    #dist-unit { font-size: 13px; color: #f5c4b3; margin-top: 2px; }
+
+    /* Info grid */
+    #info-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 8px; width: 100%; padding: 0 12px 8px;
+    }
+    .info-card {
+      background: #1a1820; border: 0.5px solid #2e2b38;
+      border-radius: 14px; padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .info-card i      { font-size: 20px; color: #534AB7; }
+    .info-card .label { font-size: 11px; color: #7a758f; }
+    .info-card .value { font-size: 14px; font-weight: 500; color: #f0eefc; margin-top: 2px; }
+
+    /* Store list */
+    #toggle-list {
+      margin: 0 12px 8px; background: transparent;
+      border: 0.5px solid #2e2b38; border-radius: 10px;
+      padding: 9px 14px; color: #7a758f; font-size: 12px;
+      cursor: pointer; width: calc(100% - 24px);
+      display: none; align-items: center; justify-content: center; gap: 6px;
+    }
+    #stores-list {
+      margin: 0 12px 8px;
+      display: none; flex-direction: column; gap: 6px;
+      max-height: 200px; overflow-y: auto;
+    }
+    .store-item {
+      background: #1a1820; border: 0.5px solid #2e2b38;
+      border-radius: 12px; padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: border-color 0.2s;
+    }
+    .store-item:hover, .store-item.active { border-color: #D85A30; }
+    .store-item i       { font-size: 18px; color: #D85A30; flex-shrink: 0; }
+    .store-item .sname  { font-size: 13px; font-weight: 500; color: #f0eefc; }
+    .store-item .sdist  { font-size: 11px; color: #7a758f; margin-top: 2px; }
+    .store-item .srating{ font-size: 11px; color: #BA7517; margin-left: auto; }
+
+    /* Locate button */
+    #locate-btn {
+      margin: 0 12px 24px; width: calc(100% - 24px);
+      background: #D85A30; border: none; border-radius: 14px;
+      padding: 15px; color: #fff; font-size: 15px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.2s;
+    }
+    #locate-btn:hover    { background: #993C1D; }
+    #locate-btn:disabled { background: #4a2518; color: #a06050; cursor: not-allowed; }
+    #locate-btn i { font-size: 18px; }
+
+    #err-msg {
+      background: #1e1520; border: 0.5px solid #6b3050;
+      border-radius: 10px; padding: 10px 14px;
+      margin: 0 12px 10px; font-size: 12px; color: #e89ab8; display: none;
+    }
+
+    /* Install banner */
+    #install-banner {
+      background: #1a1820; border: 0.5px solid #534AB7;
+      border-radius: 14px; margin: 12px 12px 0;
+      padding: 12px 14px; display: none;
+      align-items: center; gap: 10px;
+    }
+    #install-banner i  { font-size: 22px; color: #534AB7; flex-shrink: 0; }
+    #install-banner p  { font-size: 12px; color: #AFA9EC; flex: 1; }
+    #install-btn {
+      background: #534AB7; border: none; border-radius: 8px;
+      padding: 6px 12px; color: #fff; font-size: 12px; cursor: pointer;
+    }
+    #close-banner {
+      background: none; border: none; color: #7a758f; cursor: pointer; font-size: 18px;
+    }
+  </style>
+</head>
+<body>
 <div id="app">
   <div id="header">
-    <div class="icon-wrap"><i class="ti ti-bottle" aria-hidden="true"></i></div>
+    <div class="icon-wrap"><i class="ti ti-bottle"></i></div>
     <div>
       <h1>Spirits Finder</h1>
-      <p>Nearest liquor store compass</p>
+      <p>Live compass to nearest liquor store</p>
     </div>
+  </div>
+
+  <div id="install-banner">
+    <i class="ti ti-download"></i>
+    <p>Add to Home Screen for the best experience!</p>
+    <button id="install-btn" onclick="installApp()">Install</button>
+    <button id="close-banner" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
   </div>
 
   <div id="status-bar">
@@ -130,114 +189,106 @@
         <circle cx="105" cy="105" r="98" fill="#0f0e11" stroke="#2e2b38" stroke-width="0.5"/>
         <circle cx="105" cy="105" r="80" fill="none" stroke="#221f2e" stroke-width="0.5"/>
         <circle cx="105" cy="105" r="55" fill="none" stroke="#221f2e" stroke-width="0.5"/>
-
-        <text x="105" y="18" text-anchor="middle" font-size="13" font-weight="500" fill="#D85A30">N</text>
+        <text x="105" y="18"  text-anchor="middle" font-size="13" font-weight="600" fill="#D85A30">N</text>
         <text x="105" y="200" text-anchor="middle" font-size="12" fill="#444">S</text>
-        <text x="14" y="109" text-anchor="middle" font-size="12" fill="#444">W</text>
+        <text x="14"  y="109" text-anchor="middle" font-size="12" fill="#444">W</text>
         <text x="196" y="109" text-anchor="middle" font-size="12" fill="#444">E</text>
-
         <line x1="105" y1="10" x2="105" y2="20" stroke="#D85A30" stroke-width="2"/>
         <line x1="105" y1="190" x2="105" y2="200" stroke="#333" stroke-width="1"/>
-        <line x1="10" y1="105" x2="20" y2="105" stroke="#333" stroke-width="1"/>
+        <line x1="10"  y1="105" x2="20"  y2="105" stroke="#333" stroke-width="1"/>
         <line x1="190" y1="105" x2="200" y2="105" stroke="#333" stroke-width="1"/>
-
-        <line x1="148" y1="22" x2="144" y2="30" stroke="#2e2b38" stroke-width="0.8"/>
-        <line x1="188" y1="62" x2="180" y2="66" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="148" y1="22"  x2="144" y2="30"  stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="188" y1="62"  x2="180" y2="66"  stroke="#2e2b38" stroke-width="0.8"/>
         <line x1="188" y1="148" x2="180" y2="144" stroke="#2e2b38" stroke-width="0.8"/>
         <line x1="148" y1="188" x2="144" y2="180" stroke="#2e2b38" stroke-width="0.8"/>
-        <line x1="62" y1="188" x2="66" y2="180" stroke="#2e2b38" stroke-width="0.8"/>
-        <line x1="22" y1="148" x2="30" y2="144" stroke="#2e2b38" stroke-width="0.8"/>
-        <line x1="22" y1="62" x2="30" y2="66" stroke="#2e2b38" stroke-width="0.8"/>
-        <line x1="62" y1="22" x2="66" y2="30" stroke="#2e2b38" stroke-width="0.8"/>
-
+        <line x1="62"  y1="188" x2="66"  y2="180" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="22"  y1="148" x2="30"  y2="144" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="22"  y1="62"  x2="30"  y2="66"  stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="62"  y1="22"  x2="66"  y2="30"  stroke="#2e2b38" stroke-width="0.8"/>
         <g id="needle-group">
           <polygon points="105,22 111,105 105,115 99,105" fill="#D85A30"/>
           <polygon points="105,188 111,105 105,115 99,105" fill="#333"/>
-          <circle cx="105" cy="105" r="8" fill="#0f0e11" stroke="#2e2b38" stroke-width="1.5"/>
+          <circle cx="105" cy="105" r="8"   fill="#0f0e11" stroke="#2e2b38" stroke-width="1.5"/>
           <circle cx="105" cy="105" r="3.5" fill="#D85A30"/>
         </g>
-
-        <g id="bearing-arrow" style="display:none;">
+        <g id="bearing-arrow" style="display:none">
           <line x1="105" y1="105" x2="105" y2="30" stroke="#1D9E75" stroke-width="2.5" stroke-linecap="round"/>
           <polygon points="105,22 110,36 105,32 100,36" fill="#1D9E75"/>
           <circle cx="105" cy="105" r="5" fill="#1D9E75"/>
         </g>
       </svg>
     </div>
-
     <div id="distance-badge">
-      <i class="ti ti-map-pin" aria-hidden="true"></i>
+      <i class="ti ti-map-pin"></i>
       <span id="dist-val">—</span>
       <span id="dist-unit">km away</span>
     </div>
   </div>
 
   <div id="info-grid">
-    <div class="info-card">
-      <i class="ti ti-compass" aria-hidden="true"></i>
-      <div>
-        <div class="label">Bearing</div>
-        <div class="value" id="bearing-val">— °</div>
-      </div>
-    </div>
-    <div class="info-card">
-      <i class="ti ti-clock" aria-hidden="true"></i>
-      <div>
-        <div class="label">Walk time</div>
-        <div class="value" id="walk-val">— min</div>
-      </div>
-    </div>
-    <div class="info-card">
-      <i class="ti ti-navigation" aria-hidden="true"></i>
-      <div>
-        <div class="label">Direction</div>
-        <div class="value" id="dir-val">—</div>
-      </div>
-    </div>
-    <div class="info-card">
-      <i class="ti ti-star" aria-hidden="true"></i>
-      <div>
-        <div class="label">Rating</div>
-        <div class="value" id="rating-val">—</div>
-      </div>
-    </div>
+    <div class="info-card"><i class="ti ti-compass"></i><div><div class="label">Bearing</div><div class="value" id="bearing-val">—°</div></div></div>
+    <div class="info-card"><i class="ti ti-clock"></i><div><div class="label">Walk time</div><div class="value" id="walk-val">— min</div></div></div>
+    <div class="info-card"><i class="ti ti-navigation"></i><div><div class="label">Direction</div><div class="value" id="dir-val">—</div></div></div>
+    <div class="info-card"><i class="ti ti-star"></i><div><div class="label">Rating</div><div class="value" id="rating-val">—</div></div></div>
   </div>
 
-  <div id="permission-msg">Allow location access in your browser to find nearby stores.</div>
+  <button id="toggle-list" onclick="toggleList()"><i class="ti ti-list"></i> <span id="toggle-txt">Show nearby stores</span></button>
+  <div id="stores-list"></div>
+  <div id="err-msg"></div>
 
   <button id="locate-btn" onclick="startLocating()">
-    <i class="ti ti-current-location" aria-hidden="true"></i>
-    Locate Nearest Store
+    <i class="ti ti-current-location"></i> Locate Nearest Store
   </button>
 </div>
 
 <script>
-  let compassHeading = 0;
-  let targetBearing = 0;
-  let wobbleTimer = null;
+  const RAPIDAPI_KEY  = 'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c';
+  const RAPIDAPI_HOST = 'google-map-places.p.rapidapi.com';
 
-  function toRad(d) { return d * Math.PI / 180; }
-  function toDeg(r) { return r * 180 / Math.PI; }
+  let compassHeading = 0, targetBearing = 0, demoTimer = null;
+  let allStores = [], activeIdx = 0, deferredPrompt = null;
+
+  // PWA install prompt
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPrompt = e;
+    document.getElementById('install-banner').style.display = 'flex';
+  });
+  function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      document.getElementById('install-banner').style.display = 'none';
+      deferredPrompt = null;
+    });
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => r * 180 / Math.PI;
 
   function calcBearing(lat1,lng1,lat2,lng2) {
-    const dLng = toRad(lng2-lng1);
-    const rl1=toRad(lat1), rl2=toRad(lat2);
-    const y=Math.sin(dLng)*Math.cos(rl2);
-    const x=Math.cos(rl1)*Math.sin(rl2)-Math.sin(rl1)*Math.cos(rl2)*Math.cos(dLng);
-    return (toDeg(Math.atan2(y,x))+360)%360;
+    const dL=toRad(lng2-lng1), r1=toRad(lat1), r2=toRad(lat2);
+    return (toDeg(Math.atan2(Math.sin(dL)*Math.cos(r2), Math.cos(r1)*Math.sin(r2)-Math.sin(r1)*Math.cos(r2)*Math.cos(dL)))+360)%360;
   }
   function calcDistance(lat1,lng1,lat2,lng2) {
-    const R=6371;
-    const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+    const R=6371, dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
     const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
   }
-  function bearingToDir(b) {
-    return ['N','NE','E','SE','S','SW','W','NW','N'][Math.round(b/45)];
-  }
-  function setStatus(txt, active) {
+  function bearingToDir(b) { return ['N','NE','E','SE','S','SW','W','NW','N'][Math.round(b/45)]; }
+
+  function setStatus(txt, color) {
     document.getElementById('status-text').textContent = txt;
-    document.getElementById('status-dot').style.background = active ? '#639922' : '#BA7517';
+    document.getElementById('status-dot').style.background = color || '#444';
+  }
+  function showErr(msg) {
+    const el = document.getElementById('err-msg');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
   }
   function updateCompass(bearing) {
     const rel = (bearing - compassHeading + 360) % 360;
@@ -246,108 +297,129 @@
     document.getElementById('bearing-val').textContent = Math.round(bearing) + '°';
     document.getElementById('dir-val').textContent = bearingToDir(bearing);
   }
-  function showStore(name, dist, bearing, rating) {
-    document.getElementById('store-name').textContent = name;
-    document.getElementById('dist-val').textContent = dist < 1 ? Math.round(dist*1000) : dist.toFixed(1);
-    document.getElementById('dist-unit').textContent = dist < 1 ? 'm away' : 'km away';
-    document.getElementById('walk-val').textContent = Math.round(dist*12) + ' min';
-    document.getElementById('rating-val').textContent = rating ? '★ ' + rating : '—';
-    targetBearing = bearing;
-    updateCompass(bearing);
+  function showStore(store) {
+    document.getElementById('store-name').textContent = store.name;
+    const d = store.dist;
+    document.getElementById('dist-val').textContent = d < 1 ? Math.round(d*1000) : d.toFixed(1);
+    document.getElementById('dist-unit').textContent = d < 1 ? 'm away' : 'km away';
+    document.getElementById('walk-val').textContent = Math.round(d * 12) + ' min';
+    document.getElementById('rating-val').textContent = store.rating ? '★ ' + store.rating : 'N/A';
+    targetBearing = store.bearing;
+    updateCompass(store.bearing);
   }
+  function renderList() {
+    const el = document.getElementById('stores-list');
+    el.innerHTML = '';
+    allStores.forEach((s, i) => {
+      const div = document.createElement('div');
+      div.className = 'store-item' + (i === activeIdx ? ' active' : '');
+      div.innerHTML = `<i class="ti ti-building-store"></i>
+        <div><div class="sname">${s.name}</div>
+        <div class="sdist">${s.dist<1?Math.round(s.dist*1000)+'m':s.dist.toFixed(1)+'km'} · ${bearingToDir(s.bearing)}</div></div>
+        <div class="srating">${s.rating ? '★ ' + s.rating : ''}</div>`;
+      div.onclick = () => { activeIdx = i; showStore(s); renderList(); };
+      el.appendChild(div);
+    });
+  }
+  function toggleList() {
+    const el = document.getElementById('stores-list');
+    const visible = el.style.display === 'flex';
+    el.style.display = visible ? 'none' : 'flex';
+    document.getElementById('toggle-txt').textContent = visible ? 'Show nearby stores' : 'Hide store list';
+  }
+
   function startLocating() {
-    setStatus('Getting your location…', false);
-    document.getElementById('permission-msg').style.display = 'none';
-    if (!navigator.geolocation) { setStatus('Geolocation not supported', false); return; }
+    const btn = document.getElementById('locate-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Locating…';
+    setStatus('Getting your location…', '#BA7517');
+    if (!navigator.geolocation) { setStatus('Geolocation not supported', '#c0392b'); btn.disabled=false; return; }
     navigator.geolocation.getCurrentPosition(pos => {
-      const {latitude, longitude} = pos.coords;
-      setStatus('Searching for stores…', false);
-      searchNearby(latitude, longitude);
+      const { latitude: lat, longitude: lng } = pos.coords;
+      setStatus('Searching nearby stores…', '#BA7517');
+      fetchStores(lat, lng);
       if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
-        DeviceOrientationEvent.requestPermission().then(p => {
-          if (p === 'granted') window.addEventListener('deviceorientation', onOrient);
-        }).catch(()=>{});
+        DeviceOrientationEvent.requestPermission()
+          .then(p => { if (p === 'granted') window.addEventListener('deviceorientation', onOrient); })
+          .catch(() => {});
       } else {
         window.addEventListener('deviceorientation', onOrient);
       }
-    }, err => {
-      setStatus('Location denied — demo mode', false);
-      document.getElementById('permission-msg').style.display = 'block';
+    }, () => {
+      setStatus('Location denied — demo mode', '#BA7517');
+      btn.disabled = false; btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
       demoMode();
-    }, {timeout:10000});
+    }, { timeout: 10000, enableHighAccuracy: true });
   }
+
   function onOrient(e) {
-    compassHeading = e.webkitCompassHeading != null ? e.webkitCompassHeading : (360 - (e.alpha||0)) % 360;
-    const needle = document.getElementById('needle-group');
-    needle.style.transform = `rotate(${-compassHeading}deg)`;
+    compassHeading = e.webkitCompassHeading != null ? e.webkitCompassHeading : (360 - (e.alpha || 0)) % 360;
+    document.getElementById('needle-group').style.transform = `rotate(${-compassHeading}deg)`;
     updateCompass(targetBearing);
   }
-  function searchNearby(lat, lng) {
-  // 1. Set up the RapidAPI URL for Google Places Nearby Search
-  const radius = 3000;
-  const url = `https://google-map-places.p.rapidapi.com/maps/api/place/nearbysearch/json?location=${lat}%2C${lng}&radius=${radius}&type=liquor_store`;
 
-  // 2. Add your RapidAPI Headers
-  const options = {
-    method: 'GET',
-    headers: {
-      'x-rapidapi-host': 'google-map-places.p.rapidapi.com',
-      'x-rapidapi-key': 'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c' // Get this from your RapidAPI dashboard
-    }
-  };
-
-  // 3. Fetch the data
-  fetch(url, options)
-    .then(res => res.json())
-    .then(data => {
-      // Check if the API returned actual store results
+  async function fetchStores(lat, lng) {
+    const btn = document.getElementById('locate-btn');
+    try {
+      const url = `https://${RAPIDAPI_HOST}/maps/api/place/nearbysearch/json?location=${lat}%2C${lng}&radius=3000&type=liquor_store`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'x-rapidapi-host': RAPIDAPI_HOST, 'x-rapidapi-key': RAPIDAPI_KEY }
+      });
+      const data = await res.json();
       if (data.results && data.results.length > 0) {
-        
-        // Grab the first (closest) store
-        const p = data.results[0];
-        const slat = p.geometry.location.lat;
-        const slng = p.geometry.location.lng;
-        
-        setStatus('Store found!', true);
-        
-        // Feed the real Google Maps data into your compass UI
-        showStore(
-          p.name, 
-          calcDistance(lat, lng, slat, slng), 
-          calcBearing(lat, lng, slat, slng), 
-          p.rating
-        );
-        
+        allStores = data.results.slice(0, 5).map(p => ({
+          name: p.name,
+          dist: calcDistance(lat, lng, p.geometry.location.lat, p.geometry.location.lng),
+          bearing: calcBearing(lat, lng, p.geometry.location.lat, p.geometry.location.lng),
+          rating: p.rating || null
+        })).sort((a, b) => a.dist - b.dist);
+        activeIdx = 0;
+        setStatus(`Found ${allStores.length} store(s) nearby!`, '#639922');
+        showStore(allStores[0]);
+        renderList();
+        document.getElementById('toggle-list').style.display = 'flex';
+        btn.innerHTML = '<i class="ti ti-refresh"></i> Refresh';
       } else {
-        setStatus('No stores found nearby', false);
-        demoMode(lat, lng); 
+        setStatus('No stores found in 3km', '#c0392b');
+        showErr('No liquor stores found nearby. Try again in a different location.');
+        btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
       }
-    })
-    .catch(err => {
-      console.error("RapidAPI Error:", err);
-      setStatus('API Error — using demo mode', false);
-      demoMode(lat, lng);
-    });
-}
+    } catch (e) {
+      setStatus('API error — demo mode', '#BA7517');
+      showErr('API call failed: ' + e.message);
+      demoMode();
+      btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
+    }
+    btn.disabled = false;
+  }
 
-  function demoMode(lat, lng) {
+  function demoMode() {
     const stores = [
-      {name:'Nashik Wine Depot', dlat:0.012, dlng:0.008, rating:'4.2'},
-      {name:'Grape & Grain Wines', dlat:-0.005, dlng:0.015, rating:'4.5'},
-      {name:'City Liquor Shop', dlat:0.009, dlng:-0.011, rating:'3.9'},
+      { name: 'Nashik Wine Depot',    dlat:  0.012, dlng:  0.008, rating: 4.2 },
+      { name: 'Grape & Grain Wines',  dlat: -0.005, dlng:  0.015, rating: 4.5 },
+      { name: 'City Liquor Shop',     dlat:  0.009, dlng: -0.011, rating: 3.9 },
     ];
-    const bLat = lat||20.0059, bLng = lng||73.7898;
-    const s = stores[Math.floor(Math.random()*stores.length)];
-    const slat=bLat+s.dlat, slng=bLng+s.dlng;
-    setStatus('Demo mode — store nearby', true);
-    showStore(s.name, calcDistance(bLat,bLng,slat,slng), calcBearing(bLat,bLng,slat,slng), s.rating);
-    if (wobbleTimer) clearInterval(wobbleTimer);
+    const bLat = 20.0059, bLng = 73.7898;
+    allStores = stores.map(s => ({
+      name: s.name,
+      dist: calcDistance(bLat, bLng, bLat+s.dlat, bLng+s.dlng),
+      bearing: calcBearing(bLat, bLng, bLat+s.dlat, bLng+s.dlng),
+      rating: s.rating
+    }));
+    activeIdx = 0;
+    setStatus('Demo — 3 stores shown', '#639922');
+    showStore(allStores[0]); renderList();
+    document.getElementById('toggle-list').style.display = 'flex';
+    if (demoTimer) clearInterval(demoTimer);
     let deg = 0;
-    wobbleTimer = setInterval(()=>{
-      deg = (deg+1)%360;
-      compassHeading = deg;
+    demoTimer = setInterval(() => {
+      deg = (deg + 1) % 360; compassHeading = deg;
       document.getElementById('needle-group').style.transform = `rotate(${-deg + Math.sin(Date.now()/600)*3}deg)`;
       updateCompass(targetBearing);
     }, 40);
+    document.getElementById('locate-btn').disabled = false;
+    document.getElementById('locate-btn').innerHTML = '<i class="ti ti-current-location"></i> Retry with Location';
   }
 </script>
+</body>
+</html>
