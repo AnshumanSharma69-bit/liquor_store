@@ -308,7 +308,7 @@
     targetBearing = store.bearing;
     updateCompass(store.bearing);
   }
-  function renderList() {
+function renderList() {
     const el = document.getElementById('stores-list');
     el.innerHTML = '';
     allStores.forEach((s, i) => {
@@ -318,7 +318,14 @@
         <div><div class="sname">${s.name}</div>
         <div class="sdist">${s.dist<1?Math.round(s.dist*1000)+'m':s.dist.toFixed(1)+'km'} · ${bearingToDir(s.bearing)}</div></div>
         <div class="srating">${s.rating ? '★ ' + s.rating : ''}</div>`;
-      div.onclick = () => { activeIdx = i; showStore(s); renderList(); };
+      
+      div.onclick = () => { 
+        activeIdx = i; 
+        showStore(s); 
+        renderList(); 
+        toggleList(); // <-- This automatically minimizes the list and resets the button text!
+      };
+      
       el.appendChild(div);
     });
   }
