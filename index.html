@@ -182,6 +182,10 @@
     <span id="status-text">Tap locate to start</span>
     <span id="store-name"></span>
   </div>
+    <button id="toggle-list" onclick="toggleList()"><i class="ti ti-list"></i> <span id="toggle-txt">Show nearby stores</span></button>
+  <div id="stores-list"></div>
+  <div id="err-msg"></div>
+
 
   <div id="compass-area">
     <div id="compass-card">
@@ -232,9 +236,6 @@
     <div class="info-card"><i class="ti ti-star"></i><div><div class="label">Rating</div><div class="value" id="rating-val">—</div></div></div>
   </div>
 
-  <button id="toggle-list" onclick="toggleList()"><i class="ti ti-list"></i> <span id="toggle-txt">Show nearby stores</span></button>
-  <div id="stores-list"></div>
-  <div id="err-msg"></div>
 
   <button id="locate-btn" onclick="startLocating()">
     <i class="ti ti-current-location"></i> Locate Nearest Store
