@@ -1,0 +1,353 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  #app {
+    font-family: var(--font-sans);
+    min-height: 700px;
+    background: #0f0e11;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  #header {
+    background: #1a1820;
+    border-bottom: 0.5px solid #2e2b38;
+    padding: 18px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #header .icon-wrap {
+    width: 38px; height: 38px;
+    background: #D85A30;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #header .icon-wrap i { font-size: 20px; color: #fff; }
+  #header h1 { font-size: 17px; font-weight: 500; color: #f0eefc; }
+  #header p { font-size: 12px; color: #7a758f; margin-top: 1px; }
+  #status-bar {
+    background: #1a1820;
+    margin: 12px 12px 0;
+    border-radius: 14px;
+    border: 0.5px solid #2e2b38;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: #639922; flex-shrink: 0; }
+  #status-text { font-size: 13px; color: #7a758f; flex: 1; }
+  #store-name { font-size: 13px; font-weight: 500; color: #c9b8f5; text-align: right; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #compass-area {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 28px 20px 20px;
+    gap: 22px;
+  }
+  #compass-card {
+    background: #1a1820;
+    border-radius: 50%;
+    border: 1.5px solid #2e2b38;
+    width: 240px; height: 240px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: 0 0 0 8px #14121a, 0 0 0 9px #2e2b38;
+  }
+  #compass-svg { width: 210px; height: 210px; position: absolute; }
+  #needle-group { transform-origin: 105px 105px; transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  #bearing-arrow { transform-origin: 105px 105px; transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  #distance-badge {
+    background: #D85A30;
+    border-radius: 40px;
+    padding: 10px 24px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #distance-badge i { font-size: 18px; color: #fff; }
+  #dist-val { font-size: 24px; font-weight: 500; color: #fff; }
+  #dist-unit { font-size: 13px; color: #f5c4b3; margin-top: 2px; }
+  #info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    padding: 0 12px 12px;
+  }
+  .info-card {
+    background: #1a1820;
+    border: 0.5px solid #2e2b38;
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .info-card i { font-size: 20px; color: #534AB7; }
+  .info-card .label { font-size: 11px; color: #7a758f; }
+  .info-card .value { font-size: 14px; font-weight: 500; color: #f0eefc; margin-top: 2px; }
+  #locate-btn {
+    margin: 0 12px 16px;
+    width: calc(100% - 24px);
+    background: #D85A30;
+    border: none;
+    border-radius: 14px;
+    padding: 15px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  #locate-btn:hover { background: #993C1D; }
+  #locate-btn i { font-size: 18px; }
+  #permission-msg {
+    background: #1a1820;
+    border: 0.5px solid #534AB7;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 0 12px 12px;
+    font-size: 12px;
+    color: #AFA9EC;
+    display: none;
+  }
+</style>
+
+<div id="app">
+  <div id="header">
+    <div class="icon-wrap"><i class="ti ti-bottle" aria-hidden="true"></i></div>
+    <div>
+      <h1>Spirits Finder</h1>
+      <p>Nearest liquor store compass</p>
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <div id="status-dot"></div>
+    <span id="status-text">Tap locate to start</span>
+    <span id="store-name"></span>
+  </div>
+
+  <div id="compass-area">
+    <div id="compass-card">
+      <svg id="compass-svg" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="105" cy="105" r="98" fill="#0f0e11" stroke="#2e2b38" stroke-width="0.5"/>
+        <circle cx="105" cy="105" r="80" fill="none" stroke="#221f2e" stroke-width="0.5"/>
+        <circle cx="105" cy="105" r="55" fill="none" stroke="#221f2e" stroke-width="0.5"/>
+
+        <text x="105" y="18" text-anchor="middle" font-size="13" font-weight="500" fill="#D85A30">N</text>
+        <text x="105" y="200" text-anchor="middle" font-size="12" fill="#444">S</text>
+        <text x="14" y="109" text-anchor="middle" font-size="12" fill="#444">W</text>
+        <text x="196" y="109" text-anchor="middle" font-size="12" fill="#444">E</text>
+
+        <line x1="105" y1="10" x2="105" y2="20" stroke="#D85A30" stroke-width="2"/>
+        <line x1="105" y1="190" x2="105" y2="200" stroke="#333" stroke-width="1"/>
+        <line x1="10" y1="105" x2="20" y2="105" stroke="#333" stroke-width="1"/>
+        <line x1="190" y1="105" x2="200" y2="105" stroke="#333" stroke-width="1"/>
+
+        <line x1="148" y1="22" x2="144" y2="30" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="188" y1="62" x2="180" y2="66" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="188" y1="148" x2="180" y2="144" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="148" y1="188" x2="144" y2="180" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="62" y1="188" x2="66" y2="180" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="22" y1="148" x2="30" y2="144" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="22" y1="62" x2="30" y2="66" stroke="#2e2b38" stroke-width="0.8"/>
+        <line x1="62" y1="22" x2="66" y2="30" stroke="#2e2b38" stroke-width="0.8"/>
+
+        <g id="needle-group">
+          <polygon points="105,22 111,105 105,115 99,105" fill="#D85A30"/>
+          <polygon points="105,188 111,105 105,115 99,105" fill="#333"/>
+          <circle cx="105" cy="105" r="8" fill="#0f0e11" stroke="#2e2b38" stroke-width="1.5"/>
+          <circle cx="105" cy="105" r="3.5" fill="#D85A30"/>
+        </g>
+
+        <g id="bearing-arrow" style="display:none;">
+          <line x1="105" y1="105" x2="105" y2="30" stroke="#1D9E75" stroke-width="2.5" stroke-linecap="round"/>
+          <polygon points="105,22 110,36 105,32 100,36" fill="#1D9E75"/>
+          <circle cx="105" cy="105" r="5" fill="#1D9E75"/>
+        </g>
+      </svg>
+    </div>
+
+    <div id="distance-badge">
+      <i class="ti ti-map-pin" aria-hidden="true"></i>
+      <span id="dist-val">—</span>
+      <span id="dist-unit">km away</span>
+    </div>
+  </div>
+
+  <div id="info-grid">
+    <div class="info-card">
+      <i class="ti ti-compass" aria-hidden="true"></i>
+      <div>
+        <div class="label">Bearing</div>
+        <div class="value" id="bearing-val">— °</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <i class="ti ti-clock" aria-hidden="true"></i>
+      <div>
+        <div class="label">Walk time</div>
+        <div class="value" id="walk-val">— min</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <i class="ti ti-navigation" aria-hidden="true"></i>
+      <div>
+        <div class="label">Direction</div>
+        <div class="value" id="dir-val">—</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <i class="ti ti-star" aria-hidden="true"></i>
+      <div>
+        <div class="label">Rating</div>
+        <div class="value" id="rating-val">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="permission-msg">Allow location access in your browser to find nearby stores.</div>
+
+  <button id="locate-btn" onclick="startLocating()">
+    <i class="ti ti-current-location" aria-hidden="true"></i>
+    Locate Nearest Store
+  </button>
+</div>
+
+<script>
+  let compassHeading = 0;
+  let targetBearing = 0;
+  let wobbleTimer = null;
+
+  function toRad(d) { return d * Math.PI / 180; }
+  function toDeg(r) { return r * 180 / Math.PI; }
+
+  function calcBearing(lat1,lng1,lat2,lng2) {
+    const dLng = toRad(lng2-lng1);
+    const rl1=toRad(lat1), rl2=toRad(lat2);
+    const y=Math.sin(dLng)*Math.cos(rl2);
+    const x=Math.cos(rl1)*Math.sin(rl2)-Math.sin(rl1)*Math.cos(rl2)*Math.cos(dLng);
+    return (toDeg(Math.atan2(y,x))+360)%360;
+  }
+  function calcDistance(lat1,lng1,lat2,lng2) {
+    const R=6371;
+    const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+    const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function bearingToDir(b) {
+    return ['N','NE','E','SE','S','SW','W','NW','N'][Math.round(b/45)];
+  }
+  function setStatus(txt, active) {
+    document.getElementById('status-text').textContent = txt;
+    document.getElementById('status-dot').style.background = active ? '#639922' : '#BA7517';
+  }
+  function updateCompass(bearing) {
+    const rel = (bearing - compassHeading + 360) % 360;
+    document.getElementById('bearing-arrow').style.transform = `rotate(${rel}deg)`;
+    document.getElementById('bearing-arrow').style.display = '';
+    document.getElementById('bearing-val').textContent = Math.round(bearing) + '°';
+    document.getElementById('dir-val').textContent = bearingToDir(bearing);
+  }
+  function showStore(name, dist, bearing, rating) {
+    document.getElementById('store-name').textContent = name;
+    document.getElementById('dist-val').textContent = dist < 1 ? Math.round(dist*1000) : dist.toFixed(1);
+    document.getElementById('dist-unit').textContent = dist < 1 ? 'm away' : 'km away';
+    document.getElementById('walk-val').textContent = Math.round(dist*12) + ' min';
+    document.getElementById('rating-val').textContent = rating ? '★ ' + rating : '—';
+    targetBearing = bearing;
+    updateCompass(bearing);
+  }
+  function startLocating() {
+    setStatus('Getting your location…', false);
+    document.getElementById('permission-msg').style.display = 'none';
+    if (!navigator.geolocation) { setStatus('Geolocation not supported', false); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const {latitude, longitude} = pos.coords;
+      setStatus('Searching for stores…', false);
+      searchNearby(latitude, longitude);
+      if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
+        DeviceOrientationEvent.requestPermission().then(p => {
+          if (p === 'granted') window.addEventListener('deviceorientation', onOrient);
+        }).catch(()=>{});
+      } else {
+        window.addEventListener('deviceorientation', onOrient);
+      }
+    }, err => {
+      setStatus('Location denied — demo mode', false);
+      document.getElementById('permission-msg').style.display = 'block';
+      demoMode();
+    }, {timeout:10000});
+  }
+  function onOrient(e) {
+    compassHeading = e.webkitCompassHeading != null ? e.webkitCompassHeading : (360 - (e.alpha||0)) % 360;
+    const needle = document.getElementById('needle-group');
+    needle.style.transform = `rotate(${-compassHeading}deg)`;
+    updateCompass(targetBearing);
+  }
+  function searchNearby(lat, lng) {
+  // 1. Set up the RapidAPI URL for Google Places Nearby Search
+  const radius = 3000;
+  const url = `https://google-map-places.p.rapidapi.com/maps/api/place/nearbysearch/json?location=${lat}%2C${lng}&radius=${radius}&type=liquor_store`;
+
+  // 2. Add your RapidAPI Headers
+  const options = {
+    method: 'GET',
+    headers: {
+      'x-rapidapi-host': 'google-map-places.p.rapidapi.com',
+      'x-rapidapi-key': 'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c' // Get this from your RapidAPI dashboard
+    }
+  };
+
+  // 3. Fetch the data
+  fetch(url, options)
+    .then(res => res.json())
+    .then(data => {
+      // Check if the API returned actual store results
+      if (data.results && data.results.length > 0) {
+        
+        // Grab the first (closest) store
+        const p = data.results[0];
+        const slat = p.geometry.location.lat;
+        const slng = p.geometry.location.lng;
+        
+        setStatus('Store found!', true);
+        
+        // Feed the real Google Maps data into your compass UI
+        showStore(
+          p.name, 
+          calcDistance(lat, lng, slat, slng), 
+          calcBearing(lat, lng, slat, slng), 
+          p.rating
+        );
+        
+      } else {
+        setStatus('No stores found nearby', false);
+        demoMode(lat, lng); 
+      }
+    })
+    .catch(err => {
+      console.error("RapidAPI Error:", err);
+      setStatus('API Error — using demo mode', false);
+      demoMode(lat, lng);
+    });
+}
+
+  function demoMode(lat, lng) {
+    const stores = [
+      {name:'Nashik Wine Depot', dlat:0.012, dlng:0.008, rating:'4.2'},
+      {name:'Grape & Grain Wines', dlat:-0.005, dlng:0.015, rating:'4.5'},
+      {name:'City Liquor Shop', dlat:0.009, dlng:-0.011, rating:'3.9'},
+    ];
+    const bLat = lat||20.0059, bLng = lng||73.7898;
+    const s = stores[Math.floor(Math.random()*stores.length)];
+    const slat=bLat+s.dlat, slng=bLng+s.dlng;
+    setStatus('Demo mode — store nearby', true);
+    showStore(s.name, calcDistance(bLat,bLng,slat,slng), calcBearing(bLat,bLng,slat,slng), s.rating);
+    if (wobbleTimer) clearInterval(wobbleTimer);
+    let deg = 0;
+    wobbleTimer = setInterval(()=>{
+      deg = (deg+1)%360;
+      compassHeading = deg;
+      document.getElementById('needle-group').style.transform = `rotate(${-deg + Math.sin(Date.now()/600)*3}deg)`;
+      updateCompass(targetBearing);
+    }, 40);
+  }
+</script>
