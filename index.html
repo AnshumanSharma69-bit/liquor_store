@@ -245,7 +245,7 @@
 </div>
 
 <script>
-  <Analytics> import { Analytics } from "@vercel/analytics/next"</Analytics>
+  
   const RAPIDAPI_KEY  = 'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c';
   const RAPIDAPI_HOST = 'google-map-places.p.rapidapi.com';
 
@@ -431,6 +431,9 @@ function renderList() {
     document.getElementById('locate-btn').disabled = false;
     document.getElementById('locate-btn').innerHTML = '<i class="ti ti-current-location"></i> Retry with Location';
   }
+  
 </script>
+<!-- Place this right before </body> -->
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
