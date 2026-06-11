@@ -78,15 +78,13 @@ function onOrient(e) {
 // ── API calls ────────────────────────────────────────────────
 async function fetchPhoto(ref) {
   try {
-    const res = await fetch(
-      `https://${HOST}/maps/api/place/photo?maxwidth=500&photoreference=${ref}`,
-      { headers: HEADERS }
-    );
-    const blob = await res.blob();
-    if (!blob.type.startsWith('image')) return null;
-    const url = URL.createObjectURL(blob);
-    blobURLs.push(url);
-    return url;
+    // Use our Vercel serverless proxy to avoid CORS issues
+    const proxyUrl = `/api/photo?ref=${encodeURIComponent(ref)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.startsWith('image')) return null;
+    return proxyUrl; // use directly as img src — already proxied
   } catch { return null; }
 }
 
@@ -215,6 +213,10 @@ async function activateStore(idx) {
     const url = await fetchPhoto(photoRef);
     if (url) {
       const img = document.getElementById('store-photo');
+      img.onerror = () => {
+        img.style.display = 'none';
+        document.getElementById('photo-placeholder').style.display = 'flex';
+      };
       img.onload = () => {
         img.style.display = 'block';
         document.getElementById('photo-placeholder').style.display = 'none';
