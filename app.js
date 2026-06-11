@@ -168,12 +168,11 @@ async function activateStore(idx) {
   document.getElementById('store-hours-short').textContent = '';
 
   // Reset action buttons
-  document.getElementById('btn-call').className = 'action-btn call off';
-  document.getElementById('btn-call').href = '#';
-  document.getElementById('btn-dir').className  = 'action-btn dir';
-  document.getElementById('btn-dir').href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
-  document.getElementById('btn-web').className  = 'action-btn web off';
-  document.getElementById('btn-web').href = '#';
+  document.getElementById('btn-call').className  = 'action-btn call off';
+  document.getElementById('btn-call').href        = '#';
+  document.getElementById('btn-dir').className   = 'action-btn dir';
+  document.getElementById('btn-dir').href         = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+  document.getElementById('btn-share').className  = 'action-btn share';
 
   renderList();
 
@@ -187,11 +186,7 @@ async function activateStore(idx) {
     document.getElementById('btn-call').className = 'action-btn call';
   }
 
-  // Website
-  if (details.website) {
-    document.getElementById('btn-web').href = details.website;
-    document.getElementById('btn-web').className = 'action-btn web';
-  }
+  // Website removed — most stores don't have one
 
   // Hours
   if (details.opening_hours) {
@@ -287,7 +282,41 @@ function startLocating() {
   }, { timeout: 10000, enableHighAccuracy: true });
 }
 
-// ── Demo mode ────────────────────────────────────────────────
+// ── Share ─────────────────────────────────────────────────────
+function shareStore() {
+  const s = stores[activeIdx];
+  if (!s) return;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+  const text    = `${s.name} — ${fmtDist(s.dist)} away`;
+
+  if (navigator.share) {
+    navigator.share({ title: s.name, text, url: mapsUrl }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(`${text}\n${mapsUrl}`)
+      .then(() => showToast('Link copied to clipboard!'))
+      .catch(() => showToast('Could not copy link'));
+  }
+}
+
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = `
+      position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+      background:#1e1b2a; border:0.5px solid #3B9EE8; color:#93C9F0;
+      padding:9px 18px; border-radius:20px; font-size:12px; font-weight:500;
+      z-index:999; pointer-events:none; transition:opacity 0.3s;
+    `;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+
 function demoMode(lat, lng) {
   const bLat = lat || 20.0059, bLng = lng || 73.7898;
   const raw = [
@@ -320,8 +349,9 @@ function demoMode(lat, lng) {
   document.getElementById('i-rating').textContent  = s.rating;
   document.getElementById('store-rating').textContent = '★★★★ ' + s.rating;
   document.getElementById('store-rating').style.color = '#F5A833';
-  document.getElementById('btn-dir').className = 'action-btn dir';
-  document.getElementById('btn-dir').href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+  document.getElementById('btn-dir').className   = 'action-btn dir';
+  document.getElementById('btn-dir').href         = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+  document.getElementById('btn-share').className  = 'action-btn share';
 
   const badge = document.getElementById('open-badge');
   badge.className = 'open'; badge.style.display = 'flex';

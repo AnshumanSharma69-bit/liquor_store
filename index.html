@@ -103,8 +103,9 @@
     .action-btn span    { font-size: 10px; font-weight: 500; color: #7a748f; }
     .action-btn.call  i { color: #22C77A; }
     .action-btn.dir   i { color: #8B7FFF; }
-    .action-btn.web   i { color: #E05A28; }
+    .action-btn.share i { color: #3B9EE8; }
     .action-btn.off     { opacity: 0.3; pointer-events: none; }
+    button.action-btn   { border: 0.5px solid #2a2638; cursor: pointer; }
 
     /* ── Status ── */
     #status-bar {
@@ -243,9 +244,9 @@
       </div>
     </div>
     <div id="action-row">
-      <a id="btn-call" class="action-btn call off" href="#"><i class="ti ti-phone"></i><span>Call</span></a>
-      <a id="btn-dir"  class="action-btn dir  off" href="#" target="_blank"><i class="ti ti-map-2"></i><span>Directions</span></a>
-      <a id="btn-web"  class="action-btn web  off" href="#" target="_blank"><i class="ti ti-world"></i><span>Website</span></a>
+      <a id="btn-call"    class="action-btn call  off" href="#"><i class="ti ti-phone"></i><span>Call</span></a>
+      <a id="btn-dir"     class="action-btn dir   off" href="#" target="_blank"><i class="ti ti-map-2"></i><span>Directions</span></a>
+      <button id="btn-share" class="action-btn share off" onclick="shareStore()"><i class="ti ti-share"></i><span>Share</span></button>
     </div>
   </div>
 
