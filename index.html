@@ -15,21 +15,21 @@
   <title>Spirits Finder</title>
   <style>
     :root {
-      --bg:      #09080e;
-      --s1:      #131120;
-      --s2:      #1a1829;
-      --s3:      #201e30;
+      --bg:      #080608;
+      --s1:      #120b0b;
+      --s2:      #1a0d0d;
+      --s3:      #221212;
       --border:  rgba(255,255,255,0.07);
       --border2: rgba(255,255,255,0.12);
-      --orange:  #E8622B;
-      --orange2: #ff7a45;
+      --orange:  #B81A1A;
+      --orange2: #E02222;
       --green:   #1DB87A;
       --purple:  #7C6FE0;
       --gold:    #F5A833;
       --red:     #FF5C7A;
-      --text:    #F0EDFB;
-      --muted:   #6E6885;
-      --muted2:  #9490a8;
+      --text:    #F5F0F0;
+      --muted:   #7a6565;
+      --muted2:  #a89090;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -44,8 +44,8 @@
       max-width: 430px; margin: 0 auto; min-height: 100dvh;
       background: var(--bg);
       background-image:
-        radial-gradient(ellipse 100% 50% at 50% 0%, rgba(124,111,224,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 100% 80%, rgba(232,98,43,0.05) 0%, transparent 60%);
+        radial-gradient(ellipse 120% 55% at 50% 0%, rgba(180,20,20,0.14) 0%, transparent 65%),
+        radial-gradient(ellipse 70% 45% at 10% 85%, rgba(140,10,10,0.10) 0%, transparent 60%);
       display: flex; flex-direction: column;
     }
 
@@ -56,10 +56,10 @@
     }
     .app-icon {
       width: 44px; height: 44px; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--orange2) 0%, var(--orange) 100%);
+      background: linear-gradient(135deg, #E02222 0%, #8B0000 100%);
       border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(232,98,43,0.35);
+      box-shadow: 0 4px 20px rgba(180,20,20,0.5);
     }
     .app-icon i { font-size: 24px; color: #fff; }
     #header h1 { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
@@ -92,8 +92,8 @@
       transition: all 0.18s; font-family: inherit;
     }
     .rpill.active {
-      background: linear-gradient(135deg, rgba(232,98,43,0.2), rgba(232,98,43,0.08));
-      border-color: rgba(232,98,43,0.5); color: var(--orange2);
+      background: linear-gradient(135deg, rgba(224,34,34,0.2), rgba(180,20,20,0.08));
+      border-color: rgba(200,20,20,0.55); color: #E02222;
     }
 
     /* ── Store Card ─────────────────────────────────────────── */
@@ -214,7 +214,7 @@
     /* Outer glow ring */
     #compass-glow {
       position:absolute; inset:-18px; border-radius:50%;
-      background: radial-gradient(circle, rgba(29,184,122,0.07) 0%, transparent 65%);
+      background: radial-gradient(circle, rgba(200,0,0,0.08) 0%, transparent 65%);
       opacity:0; transition:opacity 0.7s;
     }
     #compass-wrap.active #compass-glow { opacity:1; }
@@ -226,7 +226,7 @@
     }
     #pulse-ring {
       position:absolute; inset:0; border-radius:50%;
-      border:1.5px solid rgba(29,184,122,0.3);
+      border:1.5px solid rgba(200,0,0,0.3);
       opacity:0; pointer-events:none;
     }
     #compass-wrap.active #pulse-ring {
@@ -239,10 +239,10 @@
 
     /* Distance pill */
     #dist-pill {
-      background: linear-gradient(135deg, var(--orange) 0%, #c94d1f 100%);
+      background: linear-gradient(135deg, #E02222 0%, #7A0000 100%);
       border-radius:40px; padding:10px 26px;
       display:flex; align-items:baseline; gap:6px;
-      box-shadow: 0 4px 20px rgba(232,98,43,0.4);
+      box-shadow: 0 4px 28px rgba(180,20,20,0.6);
     }
     #dist-val  { font-size:30px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:-1px; }
     #dist-unit { font-size:13px; color:rgba(255,255,255,0.7); }
@@ -289,7 +289,7 @@
       cursor:pointer; transition:border-color 0.15s, background 0.15s;
     }
     .sl-item:hover         { background: var(--s2); }
-    .sl-item.active        { border-color: rgba(232,98,43,0.45); background: rgba(232,98,43,0.06); }
+    .sl-item.active        { border-color: rgba(200,0,0,0.45); background: rgba(180,0,0,0.08); }
     .sl-num  { font-size:10px; font-weight:700; color: var(--orange); width:18px; text-align:center; flex-shrink:0; }
     .sl-name { font-size:13px; font-weight:500; color: var(--text); }
     .sl-meta { font-size:10px; color: var(--muted); margin-top:2px; }
@@ -307,15 +307,15 @@
     /* ── Locate Button ──────────────────────────────────────── */
     #locate-btn {
       margin:0 14px 32px; width:calc(100% - 28px);
-      background: linear-gradient(135deg, var(--orange2) 0%, var(--orange) 100%);
+      background: linear-gradient(135deg, #E02222 0%, #8B0000 100%);
       border:none; border-radius:18px; padding:17px;
       color:#fff; font-size:16px; font-weight:700;
       cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;
       letter-spacing:-0.3px; font-family:inherit;
-      box-shadow: 0 6px 24px rgba(232,98,43,0.4), 0 1px 0 rgba(255,255,255,0.15) inset;
+      box-shadow: 0 6px 28px rgba(180,20,20,0.55), 0 1px 0 rgba(255,255,255,0.12) inset;
       transition: box-shadow 0.2s, transform 0.1s;
     }
-    #locate-btn:hover   { box-shadow:0 8px 32px rgba(232,98,43,0.55); }
+    #locate-btn:hover   { box-shadow:0 8px 36px rgba(200,20,20,0.7); }
     #locate-btn:active  { transform: scale(0.98); }
     #locate-btn:disabled {
       background: var(--s2); color: var(--muted); cursor:not-allowed;
@@ -453,7 +453,7 @@
         </g>
 
         <!-- Cardinal ticks (N/E/S/W at 0°/90°/180°/270°) -->
-        <line x1="130" y1="4"   x2="130" y2="18"  stroke="#E8622B" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="130" y1="4"   x2="130" y2="18"  stroke="#CC0000" stroke-width="2.5" stroke-linecap="round"/>
         <line x1="130" y1="242" x2="130" y2="256" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="4"   y1="130" x2="18"  y2="130" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="242" y1="130" x2="256" y2="130" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
@@ -465,20 +465,20 @@
         <text x="50"  y="50"  text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.22)" font-weight="600">NW</text>
 
         <!-- Cardinal text -->
-        <text x="130" y="24"  text-anchor="middle" font-size="13" font-weight="800" fill="#E8622B" letter-spacing="0.5">N</text>
+        <text x="130" y="24"  text-anchor="middle" font-size="13" font-weight="800" fill="#CC0000" letter-spacing="0.5">N</text>
         <text x="130" y="252" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.25)" font-weight="600">S</text>
         <text x="249" y="134" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.25)" font-weight="600">E</text>
         <text x="11"  y="134" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.25)" font-weight="600">W</text>
 
         <!-- Compass needle -->
         <g id="needle-group">
-          <!-- North — orange/red -->
-          <polygon points="130,24 136.5,130 130,143 123.5,130" fill="#E8622B"/>
+          <!-- North — blood red -->
+          <polygon points="130,24 136.5,130 130,143 123.5,130" fill="#CC0000"/>
           <!-- South — dark -->
-          <polygon points="130,236 136.5,130 130,143 123.5,130" fill="#2a2640"/>
+          <polygon points="130,236 136.5,130 130,143 123.5,130" fill="#1e0808"/>
           <!-- Center cap -->
-          <circle cx="130" cy="130" r="11"  fill="#09080e" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
-          <circle cx="130" cy="130" r="4.5" fill="#E8622B"/>
+          <circle cx="130" cy="130" r="11"  fill="#080608" stroke="rgba(255,80,80,0.15)" stroke-width="1.5"/>
+          <circle cx="130" cy="130" r="4.5" fill="#CC0000"/>
           <circle cx="130" cy="130" r="1.8" fill="#fff"/>
         </g>
 
