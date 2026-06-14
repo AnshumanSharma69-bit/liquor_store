@@ -15,11 +15,7 @@
   <title>Spirits Finder</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%; background: #0c0b0f; color: #f0eefc;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-      overscroll-behavior: none;
-    }
+    html, body { height: 100%; background: #0c0b0f; color: #f0eefc; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; overscroll-behavior: none; }
     #app { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: #0c0b0f; display: flex; flex-direction: column; }
 
     /* Header */
@@ -33,29 +29,63 @@
     #install-banner { background: #161420; border: 0.5px solid #534AB7; border-radius: 16px; margin: 12px 12px 0; padding: 12px 14px; display: none; align-items: center; gap: 10px; }
     #install-banner i { font-size: 22px; color: #8B7FFF; flex-shrink: 0; }
     #install-banner p { font-size: 12px; color: #AFA9EC; flex: 1; line-height: 1.4; }
-    #install-btn { background: #534AB7; border: none; border-radius: 8px; padding: 6px 12px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    #install-btn  { background: #534AB7; border: none; border-radius: 8px; padding: 6px 12px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
     #close-banner { background: none; border: none; color: #6b6580; cursor: pointer; font-size: 16px; padding: 4px; }
 
+    /* Radius Pill Selector */
+    #radius-row { display: flex; align-items: center; gap: 8px; margin: 12px 12px 0; }
+    #radius-label { font-size: 11px; color: #6b6580; white-space: nowrap; }
+    #radius-pills { display: flex; gap: 4px; flex: 1; }
+    .rpill { flex: 1; background: #161420; border: 0.5px solid #2a2638; border-radius: 8px; padding: 7px 0; font-size: 11px; font-weight: 500; color: #6b6580; cursor: pointer; text-align: center; transition: all 0.15s; font-family: inherit; }
+    .rpill.active { background: #2a1e10; border-color: #E05A28; color: #E05A28; }
+
     /* Store Card */
-    #store-card { margin: 12px 12px 0; background: #161420; border: 0.5px solid #2a2638; border-radius: 20px; overflow: hidden; }
+    #store-card { margin: 10px 12px 0; background: #161420; border: 0.5px solid #2a2638; border-radius: 20px; overflow: hidden; }
+
+    /* Photo */
     #store-photo-wrap { height: 148px; position: relative; background: #1a1728; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    #store-photo { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; inset: 0; }
-    #photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 1; }
+    #store-photo { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; inset: 0; z-index: 1; }
+    #photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 0; }
     #photo-placeholder i    { font-size: 34px; color: #2a2638; }
     #photo-placeholder span { font-size: 11px; color: #3a3550; }
-    .photo-gradient { position: absolute; inset: 0; z-index: 2; background: linear-gradient(to bottom, transparent 40%, #161420 100%); pointer-events: none; }
-    #open-badge { position: absolute; top: 10px; right: 10px; z-index: 3; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 600; align-items: center; gap: 5px; display: none; }
+    .photo-gradient { position: absolute; inset: 0; z-index: 3; background: linear-gradient(to bottom, transparent 40%, #161420 100%); pointer-events: none; }
+
+    /* Skeleton shimmer */
+    @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+    .skeleton { background: linear-gradient(90deg, #1e1b2a 25%, #2a2638 50%, #1e1b2a 75%); background-size: 400px 100%; animation: shimmer 1.3s infinite linear; border-radius: 8px; }
+    #skel-photo { position: absolute; inset: 0; z-index: 2; display: none; border-radius: 0; }
+    #skel-photo.on { display: block; }
+    #skel-title { height: 18px; width: 68%; margin-bottom: 8px; display: none; }
+    #skel-title.on { display: block; }
+    #skel-meta  { height: 12px; width: 42%; display: none; }
+    #skel-meta.on  { display: block; }
+
+    /* Open badge — tappable to reveal hours */
+    #open-badge { position: absolute; top: 10px; right: 10px; z-index: 4; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 600; align-items: center; gap: 5px; display: none; cursor: pointer; user-select: none; }
     #open-badge.open   { background: #0a2718; color: #22C77A; border: 0.5px solid #22C77A55; display: flex; }
     #open-badge.closed { background: #2a0e14; color: #FF5C7A; border: 0.5px solid #FF5C7A55; display: flex; }
-    #open-badge .dot   { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    #open-badge .dot     { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    #open-badge .chevron { font-size: 10px; margin-left: 1px; transition: transform 0.25s; }
+    #open-badge.expanded .chevron { transform: rotate(180deg); }
 
+    /* Weekly hours */
+    #hours-panel { max-height: 0; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1); background: #0e0d13; border-top: 0.5px solid transparent; }
+    #hours-panel.open { max-height: 280px; border-top-color: #2a2638; }
+    #hours-list { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .hour-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .hour-row .day  { color: #6b6580; }
+    .hour-row .time { color: #6b6580; text-align: right; }
+    .hour-row.today .day  { color: #E05A28; font-weight: 600; }
+    .hour-row.today .time { color: #F0EDF8; font-weight: 500; }
+
+    /* Store info */
     #store-info { padding: 12px 14px 4px; }
-    #store-title { font-size: 16px; font-weight: 600; color: #3a3550; letter-spacing: -0.3px; transition: color 0.3s; }
-    #store-meta  { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+    #store-title { font-size: 16px; font-weight: 600; color: #3a3550; letter-spacing: -0.3px; transition: color 0.3s; min-height: 20px; }
+    #store-meta  { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; min-height: 16px; }
     #store-rating      { font-size: 12px; color: #F5A833; }
     #store-hours-short { font-size: 11px; }
 
-    /* Action Row — 2 cols only (Call + Directions) */
+    /* Action row */
     #action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px 14px 14px; }
     .action-btn { background: #1e1b2a; border: 0.5px solid #2a2638; border-radius: 12px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; text-decoration: none; transition: background 0.15s, border-color 0.15s; font-family: inherit; }
     .action-btn:hover { background: #252233; border-color: #3d3858; }
@@ -83,16 +113,15 @@
     #dist-val  { font-size: 26px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
     #dist-unit { font-size: 12px; color: #f5c4b3; }
 
-    /* Info Grid */
+    /* Info grid */
     #info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 12px 8px; width: 100%; }
     .ic { background: #161420; border: 0.5px solid #2a2638; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
     .ic i    { font-size: 16px; color: #8B7FFF; }
     .ic .lbl { font-size: 10px; color: #6b6580; margin-top: 1px; }
     .ic .val { font-size: 13px; font-weight: 600; color: #F0EDF8; font-variant-numeric: tabular-nums; }
 
-    /* Store List */
+    /* Store list */
     #list-toggle { margin: 0 12px 6px; background: none; border: 0.5px solid #2a2638; border-radius: 10px; padding: 8px 14px; color: #6b6580; font-size: 11px; cursor: pointer; width: calc(100% - 24px); display: none; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
-    #list-toggle i { font-size: 13px; }
     #store-list { display: none; flex-direction: column; gap: 5px; margin: 0 12px 6px; max-height: 190px; overflow-y: auto; }
     .sl-item { background: #161420; border: 0.5px solid #2a2638; border-radius: 12px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s; }
     .sl-item:hover, .sl-item.active { border-color: #E05A28; }
@@ -103,11 +132,10 @@
     .sl-badge.open   { background: #0a2718; color: #22C77A; }
     .sl-badge.closed { background: #2a0e14; color: #FF5C7A; }
 
-    /* Locate Button */
-    #locate-btn { margin: 0 12px 28px; width: calc(100% - 24px); background: #E05A28; border: none; border-radius: 14px; padding: 15px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; letter-spacing: -0.2px; font-family: inherit; }
+    /* Locate button */
+    #locate-btn { margin: 0 12px 28px; width: calc(100% - 24px); background: #E05A28; border: none; border-radius: 14px; padding: 15px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; font-family: inherit; }
     #locate-btn:hover    { background: #B84520; }
     #locate-btn:disabled { background: #3a1e12; color: #7a4030; cursor: not-allowed; }
-    #locate-btn i { font-size: 17px; }
 
     #err-box { margin: 0 12px 8px; background: #1e0d16; border: 0.5px solid #5a2035; border-radius: 10px; padding: 9px 13px; font-size: 11px; color: #e89ab8; display: none; line-height: 1.4; }
     #store-list::-webkit-scrollbar { width: 3px; }
@@ -129,6 +157,18 @@
     <button id="close-banner" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
   </div>
 
+  <!-- Radius selector -->
+  <div id="radius-row">
+    <span id="radius-label">Radius</span>
+    <div id="radius-pills">
+      <button class="rpill"        data-r="1000"  onclick="setRadius(this)">1 km</button>
+      <button class="rpill active" data-r="3000"  onclick="setRadius(this)">3 km</button>
+      <button class="rpill"        data-r="5000"  onclick="setRadius(this)">5 km</button>
+      <button class="rpill"        data-r="10000" onclick="setRadius(this)">10 km</button>
+    </div>
+  </div>
+
+  <!-- Store card -->
   <div id="store-card">
     <div id="store-photo-wrap">
       <div id="photo-placeholder">
@@ -136,16 +176,28 @@
         <span>Tap locate to find a store</span>
       </div>
       <img id="store-photo" alt="Store front"/>
+      <div id="skel-photo" class="skeleton"></div>
       <div class="photo-gradient"></div>
-      <div id="open-badge"><div class="dot"></div><span id="open-txt">Open</span></div>
+      <div id="open-badge" onclick="toggleHours()">
+        <div class="dot"></div><span id="open-txt">Open</span><i class="ti ti-chevron-down chevron"></i>
+      </div>
     </div>
+
+    <!-- Expandable weekly hours -->
+    <div id="hours-panel">
+      <div id="hours-list"></div>
+    </div>
+
     <div id="store-info">
+      <div id="skel-title" class="skeleton"></div>
+      <div id="skel-meta"  class="skeleton"></div>
       <div id="store-title">— waiting for location —</div>
       <div id="store-meta">
         <span id="store-rating"></span>
         <span id="store-hours-short"></span>
       </div>
     </div>
+
     <div id="action-row">
       <a id="btn-call" class="action-btn call off" href="#"><i class="ti ti-phone"></i><span>Call</span></a>
       <a id="btn-dir"  class="action-btn dir  off" href="#" target="_blank"><i class="ti ti-map-2"></i><span>Directions</span></a>
@@ -194,10 +246,7 @@
         </g>
       </svg>
     </div>
-    <div id="dist-pill">
-      <span id="dist-val">—</span>
-      <span id="dist-unit">km away</span>
-    </div>
+    <div id="dist-pill"><span id="dist-val">—</span><span id="dist-unit">km away</span></div>
   </div>
 
   <div id="info-grid">
