@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <meta name="theme-color" content="#0c0b0f"/>
+  <meta name="theme-color" content="#09080e"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Spirits Finder"/>
@@ -14,142 +14,333 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css"/>
   <title>Spirits Finder</title>
   <style>
+    :root {
+      --bg:      #09080e;
+      --s1:      #131120;
+      --s2:      #1a1829;
+      --s3:      #201e30;
+      --border:  rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --orange:  #E8622B;
+      --orange2: #ff7a45;
+      --green:   #1DB87A;
+      --purple:  #7C6FE0;
+      --gold:    #F5A833;
+      --red:     #FF5C7A;
+      --text:    #F0EDFB;
+      --muted:   #6E6885;
+      --muted2:  #9490a8;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #0c0b0f; color: #f0eefc; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; overscroll-behavior: none; }
-    #app { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: #0c0b0f; display: flex; flex-direction: column; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app {
+      max-width: 430px; margin: 0 auto; min-height: 100dvh;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 100% 50% at 50% 0%, rgba(124,111,224,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 100% 80%, rgba(232,98,43,0.05) 0%, transparent 60%);
+      display: flex; flex-direction: column;
+    }
 
-    /* Header */
-    #header { background: #161420; border-bottom: 0.5px solid #2a2638; padding: 52px 18px 14px; display: flex; align-items: center; gap: 12px; }
-    .app-icon { width: 40px; height: 40px; background: #E05A28; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .app-icon i { font-size: 22px; color: #fff; }
-    #header h1 { font-size: 17px; font-weight: 600; color: #F0EDF8; letter-spacing: -0.3px; }
-    #header p  { font-size: 11px; color: #6b6580; margin-top: 1px; }
+    /* ── Header ─────────────────────────────────────────────── */
+    #header {
+      padding: 54px 18px 18px;
+      display: flex; align-items: center; gap: 13px;
+    }
+    .app-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--orange2) 0%, var(--orange) 100%);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(232,98,43,0.35);
+    }
+    .app-icon i { font-size: 24px; color: #fff; }
+    #header h1 { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+    #header p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* Install Banner */
-    #install-banner { background: #161420; border: 0.5px solid #534AB7; border-radius: 16px; margin: 12px 12px 0; padding: 12px 14px; display: none; align-items: center; gap: 10px; }
-    #install-banner i { font-size: 22px; color: #8B7FFF; flex-shrink: 0; }
+    /* ── Install Banner ─────────────────────────────────────── */
+    #install-banner {
+      background: var(--s1); border: 1px solid rgba(124,111,224,0.25);
+      border-radius: 18px; margin: 0 14px 4px;
+      padding: 13px 15px; display: none; align-items: center; gap: 11px;
+    }
+    #install-banner i { font-size: 22px; color: var(--purple); flex-shrink: 0; }
     #install-banner p { font-size: 12px; color: #AFA9EC; flex: 1; line-height: 1.4; }
-    #install-btn  { background: #534AB7; border: none; border-radius: 8px; padding: 6px 12px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
-    #close-banner { background: none; border: none; color: #6b6580; cursor: pointer; font-size: 16px; padding: 4px; }
+    #install-btn  { background: var(--purple); border: none; border-radius: 9px; padding: 7px 14px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+    #close-banner { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
 
-    /* Radius Pill Selector */
-    #radius-row { display: flex; align-items: center; gap: 8px; margin: 12px 12px 0; }
-    #radius-label { font-size: 11px; color: #6b6580; white-space: nowrap; }
-    #radius-pills { display: flex; gap: 4px; flex: 1; }
-    .rpill { flex: 1; background: #161420; border: 0.5px solid #2a2638; border-radius: 8px; padding: 7px 0; font-size: 11px; font-weight: 500; color: #6b6580; cursor: pointer; text-align: center; transition: all 0.15s; font-family: inherit; }
-    .rpill.active { background: #2a1e10; border-color: #E05A28; color: #E05A28; }
+    /* ── Radius Selector ────────────────────────────────────── */
+    #radius-row {
+      display: flex; align-items: center; gap: 10px;
+      margin: 0 14px 10px; padding: 10px 14px;
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    #radius-label { font-size: 11px; color: var(--muted); white-space: nowrap; font-weight: 500; }
+    #radius-pills { display: flex; gap: 5px; flex: 1; }
+    .rpill {
+      flex: 1; background: transparent; border: 1px solid var(--border);
+      border-radius: 9px; padding: 6px 0; font-size: 11px; font-weight: 500;
+      color: var(--muted); cursor: pointer; text-align: center;
+      transition: all 0.18s; font-family: inherit;
+    }
+    .rpill.active {
+      background: linear-gradient(135deg, rgba(232,98,43,0.2), rgba(232,98,43,0.08));
+      border-color: rgba(232,98,43,0.5); color: var(--orange2);
+    }
 
-    /* Store Card */
-    #store-card { margin: 10px 12px 0; background: #161420; border: 0.5px solid #2a2638; border-radius: 20px; overflow: hidden; }
+    /* ── Store Card ─────────────────────────────────────────── */
+    #store-card {
+      margin: 0 14px 10px;
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: 24px; overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05) inset;
+    }
 
     /* Photo */
-    #store-photo-wrap { height: 148px; position: relative; background: #1a1728; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    #store-photo { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; inset: 0; z-index: 1; }
-    #photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 0; }
-    #photo-placeholder i    { font-size: 34px; color: #2a2638; }
-    #photo-placeholder span { font-size: 11px; color: #3a3550; }
-    .photo-gradient { position: absolute; inset: 0; z-index: 3; background: linear-gradient(to bottom, transparent 40%, #161420 100%); pointer-events: none; }
+    #store-photo-wrap {
+      height: 190px; position: relative;
+      background: var(--s2);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    #store-photo { width:100%; height:100%; object-fit:cover; display:none; position:absolute; inset:0; z-index:1; }
+    #photo-placeholder { display:flex; flex-direction:column; align-items:center; gap:8px; z-index:0; }
+    #photo-placeholder i    { font-size:38px; color: var(--s3); }
+    #photo-placeholder span { font-size:11px; color: #2e2b42; }
 
-    /* Skeleton shimmer */
-    @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
-    .skeleton { background: linear-gradient(90deg, #1e1b2a 25%, #2a2638 50%, #1e1b2a 75%); background-size: 400px 100%; animation: shimmer 1.3s infinite linear; border-radius: 8px; }
-    #skel-photo { position: absolute; inset: 0; z-index: 2; display: none; border-radius: 0; }
-    #skel-photo.on { display: block; }
-    #skel-title { height: 18px; width: 68%; margin-bottom: 8px; display: none; }
-    #skel-title.on { display: block; }
-    #skel-meta  { height: 12px; width: 42%; display: none; }
-    #skel-meta.on  { display: block; }
+    /* Shimmer */
+    @keyframes shimmer { 0%{background-position:-500px 0} 100%{background-position:500px 0} }
+    .skeleton {
+      background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+      background-size: 500px 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 10px;
+    }
+    #skel-photo { position:absolute; inset:0; z-index:2; display:none; border-radius:0; }
+    #skel-photo.on { display:block; }
 
-    /* Open badge — tappable to reveal hours */
-    #open-badge { position: absolute; top: 10px; right: 10px; z-index: 4; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 600; align-items: center; gap: 5px; display: none; cursor: pointer; user-select: none; }
-    #open-badge.open   { background: #0a2718; color: #22C77A; border: 0.5px solid #22C77A55; display: flex; }
-    #open-badge.closed { background: #2a0e14; color: #FF5C7A; border: 0.5px solid #FF5C7A55; display: flex; }
-    #open-badge .dot     { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-    #open-badge .chevron { font-size: 10px; margin-left: 1px; transition: transform 0.25s; }
+    /* Photo overlay — store name lives here */
+    #photo-overlay {
+      position: absolute; bottom:0; left:0; right:0; z-index:3;
+      padding: 48px 16px 14px;
+      background: linear-gradient(to top, rgba(13,11,20,1) 0%, rgba(13,11,20,0.85) 40%, transparent 100%);
+    }
+    #store-title {
+      font-size: 18px; font-weight: 700; color: var(--text);
+      letter-spacing: -0.4px; line-height: 1.25;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+    }
+    #store-meta { display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap; min-height:16px; }
+    #store-rating      { font-size:12px; color: var(--gold); }
+    #store-hours-short { font-size:11px; }
+
+    /* Skeleton text overlays */
+    #skel-title { height:18px; width:65%; margin-bottom:8px; display:none; }
+    #skel-title.on { display:block; }
+    #skel-meta  { height:12px; width:40%; display:none; }
+    #skel-meta.on  { display:block; }
+
+    /* Open badge */
+    #open-badge {
+      position:absolute; top:12px; right:12px; z-index:4;
+      border-radius:20px; padding:5px 11px; font-size:11px; font-weight:600;
+      align-items:center; gap:5px; display:none; cursor:pointer; user-select:none;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    #open-badge.open   { background:rgba(10,39,24,0.85); color:var(--green); border:1px solid rgba(29,184,122,0.35); display:flex; }
+    #open-badge.closed { background:rgba(42,14,20,0.85); color:var(--red);   border:1px solid rgba(255,92,122,0.35); display:flex; }
+    #open-badge .dot     { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+    #open-badge .chevron { font-size:10px; margin-left:1px; transition:transform 0.25s; }
     #open-badge.expanded .chevron { transform: rotate(180deg); }
 
-    /* Weekly hours */
-    #hours-panel { max-height: 0; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1); background: #0e0d13; border-top: 0.5px solid transparent; }
-    #hours-panel.open { max-height: 280px; border-top-color: #2a2638; }
-    #hours-list { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 6px; }
-    .hour-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-    .hour-row .day  { color: #6b6580; }
-    .hour-row .time { color: #6b6580; text-align: right; }
-    .hour-row.today .day  { color: #E05A28; font-weight: 600; }
-    .hour-row.today .time { color: #F0EDF8; font-weight: 500; }
-
-    /* Store info */
-    #store-info { padding: 12px 14px 4px; }
-    #store-title { font-size: 16px; font-weight: 600; color: #3a3550; letter-spacing: -0.3px; transition: color 0.3s; min-height: 20px; }
-    #store-meta  { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; min-height: 16px; }
-    #store-rating      { font-size: 12px; color: #F5A833; }
-    #store-hours-short { font-size: 11px; }
+    /* Hours panel */
+    #hours-panel {
+      max-height:0; overflow:hidden;
+      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+      background: #0d0b16; border-top:1px solid transparent;
+    }
+    #hours-panel.open { max-height:280px; border-top-color: var(--border); }
+    #hours-list { padding:12px 16px 14px; display:flex; flex-direction:column; gap:7px; }
+    .hour-row { display:flex; justify-content:space-between; font-size:11px; }
+    .hour-row .day  { color: var(--muted); }
+    .hour-row .time { color: var(--muted); text-align:right; }
+    .hour-row.today .day  { color: var(--orange); font-weight:600; }
+    .hour-row.today .time { color: var(--text);   font-weight:500; }
 
     /* Action row */
-    #action-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px 14px 14px; }
-    .action-btn { background: #1e1b2a; border: 0.5px solid #2a2638; border-radius: 12px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; text-decoration: none; transition: background 0.15s, border-color 0.15s; font-family: inherit; }
-    .action-btn:hover { background: #252233; border-color: #3d3858; }
-    .action-btn i    { font-size: 22px; }
-    .action-btn span { font-size: 11px; font-weight: 500; color: #7a748f; }
-    .action-btn.call i { color: #22C77A; }
-    .action-btn.dir  i { color: #8B7FFF; }
-    .action-btn.off    { opacity: 0.3; pointer-events: none; }
+    #action-row { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:12px 14px 14px; }
+    .action-btn {
+      background: var(--s2); border:1px solid var(--border);
+      border-radius:14px; padding:13px 6px;
+      display:flex; flex-direction:column; align-items:center; gap:5px;
+      cursor:pointer; text-decoration:none;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+    .action-btn:active { transform: scale(0.97); }
+    .action-btn:hover  { background: var(--s3); border-color: var(--border2); }
+    .action-btn i    { font-size:22px; }
+    .action-btn span { font-size:11px; font-weight:500; color: var(--muted); }
+    .action-btn.call i { color: var(--green); }
+    .action-btn.dir  i { color: var(--purple); }
+    .action-btn.off    { opacity:0.28; pointer-events:none; }
 
-    /* Status */
-    #status-bar { background: #161420; margin: 8px 12px 0; border-radius: 12px; border: 0.5px solid #2a2638; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
-    #status-dot  { width: 7px; height: 7px; border-radius: 50%; background: #333; flex-shrink: 0; transition: background 0.4s; }
-    #status-text { font-size: 12px; color: #6b6580; flex: 1; }
+    /* ── Status Bar ─────────────────────────────────────────── */
+    #status-bar {
+      background: var(--s1); margin:0 14px 10px;
+      border-radius:14px; border:1px solid var(--border);
+      padding:11px 15px; display:flex; align-items:center; gap:9px;
+    }
+    #status-dot  { width:7px; height:7px; border-radius:50%; background:#333; flex-shrink:0; transition:background 0.4s; }
+    #status-text { font-size:12px; color: var(--muted); flex:1; }
 
-    /* Compass */
-    #compass-area { display: flex; flex-direction: column; align-items: center; padding: 20px 20px 12px; gap: 16px; }
-    #compass-wrap { position: relative; width: 210px; height: 210px; display: flex; align-items: center; justify-content: center; }
-    #compass-glow { position: absolute; inset: -14px; border-radius: 50%; background: radial-gradient(circle, #22C77A0d 0%, transparent 65%); opacity: 0; transition: opacity 0.6s; }
-    #compass-wrap.active #compass-glow { opacity: 1; }
-    #compass-svg   { width: 210px; height: 210px; }
-    #needle-group  { transform-origin: 105px 105px; transition: transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
-    #bearing-arrow { transform-origin: 105px 105px; transition: transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
+    /* ── Compass ────────────────────────────────────────────── */
+    #compass-area {
+      display:flex; flex-direction:column; align-items:center;
+      padding:10px 20px 14px; gap:18px;
+    }
+    #compass-wrap {
+      position:relative; width:260px; height:260px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    /* Outer glow ring */
+    #compass-glow {
+      position:absolute; inset:-18px; border-radius:50%;
+      background: radial-gradient(circle, rgba(29,184,122,0.07) 0%, transparent 65%);
+      opacity:0; transition:opacity 0.7s;
+    }
+    #compass-wrap.active #compass-glow { opacity:1; }
 
-    #dist-pill { background: #E05A28; border-radius: 40px; padding: 9px 22px; display: flex; align-items: baseline; gap: 6px; }
-    #dist-val  { font-size: 26px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
-    #dist-unit { font-size: 12px; color: #f5c4b3; }
+    /* Pulse ring animation */
+    @keyframes pulse-ring {
+      0%   { transform:scale(1);   opacity:0.4; }
+      100% { transform:scale(1.08); opacity:0; }
+    }
+    #pulse-ring {
+      position:absolute; inset:0; border-radius:50%;
+      border:1.5px solid rgba(29,184,122,0.3);
+      opacity:0; pointer-events:none;
+    }
+    #compass-wrap.active #pulse-ring {
+      animation: pulse-ring 2.2s ease-out infinite;
+    }
 
-    /* Info grid */
-    #info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 12px 8px; width: 100%; }
-    .ic { background: #161420; border: 0.5px solid #2a2638; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
-    .ic i    { font-size: 16px; color: #8B7FFF; }
-    .ic .lbl { font-size: 10px; color: #6b6580; margin-top: 1px; }
-    .ic .val { font-size: 13px; font-weight: 600; color: #F0EDF8; font-variant-numeric: tabular-nums; }
+    #compass-svg { width:260px; height:260px; }
+    #needle-group  { transform-origin:130px 130px; transition:transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
+    #bearing-arrow { transform-origin:130px 130px; transition:transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
 
-    /* Store list */
-    #list-toggle { margin: 0 12px 6px; background: none; border: 0.5px solid #2a2638; border-radius: 10px; padding: 8px 14px; color: #6b6580; font-size: 11px; cursor: pointer; width: calc(100% - 24px); display: none; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
-    #store-list { display: none; flex-direction: column; gap: 5px; margin: 0 12px 6px; max-height: 190px; overflow-y: auto; }
-    .sl-item { background: #161420; border: 0.5px solid #2a2638; border-radius: 12px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s; }
-    .sl-item:hover, .sl-item.active { border-color: #E05A28; }
-    .sl-num  { font-size: 10px; font-weight: 700; color: #E05A28; width: 16px; text-align: center; flex-shrink: 0; }
-    .sl-name { font-size: 12px; font-weight: 500; color: #F0EDF8; }
-    .sl-meta { font-size: 10px; color: #6b6580; margin-top: 1px; }
-    .sl-badge { margin-left: auto; border-radius: 6px; padding: 2px 7px; font-size: 10px; font-weight: 600; flex-shrink: 0; }
-    .sl-badge.open   { background: #0a2718; color: #22C77A; }
-    .sl-badge.closed { background: #2a0e14; color: #FF5C7A; }
+    /* Distance pill */
+    #dist-pill {
+      background: linear-gradient(135deg, var(--orange) 0%, #c94d1f 100%);
+      border-radius:40px; padding:10px 26px;
+      display:flex; align-items:baseline; gap:6px;
+      box-shadow: 0 4px 20px rgba(232,98,43,0.4);
+    }
+    #dist-val  { font-size:30px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; letter-spacing:-1px; }
+    #dist-unit { font-size:13px; color:rgba(255,255,255,0.7); }
 
-    /* Locate button */
-    #locate-btn { margin: 0 12px 28px; width: calc(100% - 24px); background: #E05A28; border: none; border-radius: 14px; padding: 15px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; font-family: inherit; }
-    #locate-btn:hover    { background: #B84520; }
-    #locate-btn:disabled { background: #3a1e12; color: #7a4030; cursor: not-allowed; }
+    /* ── Info Strip ─────────────────────────────────────────── */
+    #info-grid {
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:7px; padding:0 14px 10px; width:100%;
+    }
+    .ic {
+      background: var(--s1); border:1px solid var(--border);
+      border-radius:16px; padding:13px 12px;
+      display:flex; flex-direction:column; gap:5px;
+      position:relative; overflow:hidden;
+    }
+    .ic::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    }
+    .ic i    { font-size:18px; }
+    .ic.bear i { color: var(--purple); }
+    .ic.walk i { color: var(--green); }
+    .ic.rate i { color: var(--gold); }
+    .ic .lbl { font-size:10px; color: var(--muted); margin-top:1px; font-weight:500; text-transform:uppercase; letter-spacing:0.4px; }
+    .ic .val { font-size:15px; font-weight:700; color: var(--text); font-variant-numeric:tabular-nums; }
 
-    #err-box { margin: 0 12px 8px; background: #1e0d16; border: 0.5px solid #5a2035; border-radius: 10px; padding: 9px 13px; font-size: 11px; color: #e89ab8; display: none; line-height: 1.4; }
-    #store-list::-webkit-scrollbar { width: 3px; }
-    #store-list::-webkit-scrollbar-thumb { background: #2a2638; border-radius: 10px; }
+    /* ── Store List ─────────────────────────────────────────── */
+    #list-toggle {
+      margin:0 14px 7px; background:none; border:1px solid var(--border);
+      border-radius:12px; padding:9px 15px; color: var(--muted);
+      font-size:12px; cursor:pointer; width:calc(100% - 28px);
+      display:none; align-items:center; justify-content:center; gap:7px;
+      font-family:inherit; transition:background 0.15s;
+    }
+    #list-toggle:hover { background: var(--s1); }
+    #store-list {
+      display:none; flex-direction:column; gap:6px;
+      margin:0 14px 8px; max-height:200px; overflow-y:auto;
+    }
+    .sl-item {
+      background: var(--s1); border:1px solid var(--border);
+      border-radius:14px; padding:10px 13px;
+      display:flex; align-items:center; gap:11px;
+      cursor:pointer; transition:border-color 0.15s, background 0.15s;
+    }
+    .sl-item:hover         { background: var(--s2); }
+    .sl-item.active        { border-color: rgba(232,98,43,0.45); background: rgba(232,98,43,0.06); }
+    .sl-num  { font-size:10px; font-weight:700; color: var(--orange); width:18px; text-align:center; flex-shrink:0; }
+    .sl-name { font-size:13px; font-weight:500; color: var(--text); }
+    .sl-meta { font-size:10px; color: var(--muted); margin-top:2px; }
+    .sl-badge { margin-left:auto; border-radius:7px; padding:3px 8px; font-size:10px; font-weight:600; flex-shrink:0; }
+    .sl-badge.open   { background:rgba(10,39,24,0.8); color:var(--green); }
+    .sl-badge.closed { background:rgba(42,14,20,0.8); color:var(--red); }
+
+    /* ── Error box ──────────────────────────────────────────── */
+    #err-box {
+      margin:0 14px 8px; background:rgba(30,13,22,0.9); border:1px solid rgba(90,32,53,0.6);
+      border-radius:12px; padding:10px 14px; font-size:12px; color:#e89ab8;
+      display:none; line-height:1.5;
+    }
+
+    /* ── Locate Button ──────────────────────────────────────── */
+    #locate-btn {
+      margin:0 14px 32px; width:calc(100% - 28px);
+      background: linear-gradient(135deg, var(--orange2) 0%, var(--orange) 100%);
+      border:none; border-radius:18px; padding:17px;
+      color:#fff; font-size:16px; font-weight:700;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;
+      letter-spacing:-0.3px; font-family:inherit;
+      box-shadow: 0 6px 24px rgba(232,98,43,0.4), 0 1px 0 rgba(255,255,255,0.15) inset;
+      transition: box-shadow 0.2s, transform 0.1s;
+    }
+    #locate-btn:hover   { box-shadow:0 8px 32px rgba(232,98,43,0.55); }
+    #locate-btn:active  { transform: scale(0.98); }
+    #locate-btn:disabled {
+      background: var(--s2); color: var(--muted); cursor:not-allowed;
+      box-shadow: none;
+    }
+    #locate-btn i { font-size:19px; }
+
+    /* Scrollbar */
+    #store-list::-webkit-scrollbar { width:3px; }
+    #store-list::-webkit-scrollbar-thumb { background: var(--s3); border-radius:10px; }
   </style>
 </head>
 <body>
 <div id="app">
 
+  <!-- Header -->
   <div id="header">
     <div class="app-icon"><i class="ti ti-bottle"></i></div>
-    <div><h1>Spirits Finder</h1><p>Live compass · nearest liquor store</p></div>
+    <div>
+      <h1>Spirits Finder</h1>
+      <p>Live compass · nearest liquor store</p>
+    </div>
   </div>
 
+  <!-- Install banner -->
   <div id="install-banner">
     <i class="ti ti-download"></i>
     <p>Add to Home Screen for the full app experience!</p>
@@ -177,9 +368,21 @@
       </div>
       <img id="store-photo" alt="Store front"/>
       <div id="skel-photo" class="skeleton"></div>
-      <div class="photo-gradient"></div>
+
+      <!-- Store name + meta overlaid on photo -->
+      <div id="photo-overlay">
+        <div id="skel-title" class="skeleton"></div>
+        <div id="skel-meta"  class="skeleton"></div>
+        <div id="store-title">— waiting for location —</div>
+        <div id="store-meta">
+          <span id="store-rating"></span>
+          <span id="store-hours-short"></span>
+        </div>
+      </div>
+
       <div id="open-badge" onclick="toggleHours()">
-        <div class="dot"></div><span id="open-txt">Open</span><i class="ti ti-chevron-down chevron"></i>
+        <div class="dot"></div><span id="open-txt">Open</span>
+        <i class="ti ti-chevron-down chevron"></i>
       </div>
     </div>
 
@@ -188,79 +391,131 @@
       <div id="hours-list"></div>
     </div>
 
-    <div id="store-info">
-      <div id="skel-title" class="skeleton"></div>
-      <div id="skel-meta"  class="skeleton"></div>
-      <div id="store-title">— waiting for location —</div>
-      <div id="store-meta">
-        <span id="store-rating"></span>
-        <span id="store-hours-short"></span>
-      </div>
-    </div>
-
+    <!-- Action buttons -->
     <div id="action-row">
       <a id="btn-call" class="action-btn call off" href="#"><i class="ti ti-phone"></i><span>Call</span></a>
       <a id="btn-dir"  class="action-btn dir  off" href="#" target="_blank"><i class="ti ti-map-2"></i><span>Directions</span></a>
     </div>
   </div>
 
+  <!-- Status bar -->
   <div id="status-bar">
     <div id="status-dot"></div>
     <span id="status-text">Tap locate to get started</span>
   </div>
 
+  <!-- Compass -->
   <div id="compass-area">
     <div id="compass-wrap">
       <div id="compass-glow"></div>
-      <svg id="compass-svg" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="105" cy="105" r="100" fill="#0c0b0f" stroke="#2a2638" stroke-width="1"/>
-        <circle cx="105" cy="105" r="83"  fill="none"   stroke="#1a1728" stroke-width="0.5"/>
-        <circle cx="105" cy="105" r="58"  fill="none"   stroke="#1a1728" stroke-width="0.5"/>
-        <text x="105" y="16"  text-anchor="middle" font-size="12" font-weight="700" fill="#E05A28">N</text>
-        <text x="105" y="202" text-anchor="middle" font-size="11" fill="#3a3558">S</text>
-        <text x="12"  y="110" text-anchor="middle" font-size="11" fill="#3a3558">W</text>
-        <text x="198" y="110" text-anchor="middle" font-size="11" fill="#3a3558">E</text>
-        <line x1="105" y1="6"   x2="105" y2="18"  stroke="#E05A28" stroke-width="2"/>
-        <line x1="105" y1="192" x2="105" y2="204" stroke="#2a2638" stroke-width="1"/>
-        <line x1="6"   y1="105" x2="18"  y2="105" stroke="#2a2638" stroke-width="1"/>
-        <line x1="192" y1="105" x2="204" y2="105" stroke="#2a2638" stroke-width="1"/>
-        <line x1="149" y1="20"  x2="145" y2="28"  stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="190" y1="61"  x2="182" y2="65"  stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="190" y1="149" x2="182" y2="145" stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="149" y1="190" x2="145" y2="182" stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="61"  y1="190" x2="65"  y2="182" stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="20"  y1="149" x2="28"  y2="145" stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="20"  y1="61"  x2="28"  y2="65"  stroke="#2a2638" stroke-width="0.7"/>
-        <line x1="61"  y1="20"  x2="65"  y2="28"  stroke="#2a2638" stroke-width="0.7"/>
-        <g id="needle-group">
-          <polygon points="105,20 110,105 105,116 100,105" fill="#E05A28"/>
-          <polygon points="105,190 110,105 105,116 100,105" fill="#2a2638"/>
-          <circle cx="105" cy="105" r="9"   fill="#0c0b0f" stroke="#2a2638" stroke-width="1.5"/>
-          <circle cx="105" cy="105" r="3.5" fill="#E05A28"/>
+      <div id="pulse-ring"></div>
+      <svg id="compass-svg" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer rings -->
+        <circle cx="130" cy="130" r="126" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <circle cx="130" cy="130" r="120" fill="#09080e" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+        <circle cx="130" cy="130" r="90"  fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+        <circle cx="130" cy="130" r="62"  fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+
+        <!-- Minor tick marks every 10° (skipping cardinal/intercardinal) -->
+        <!-- generated set for the 24 minor positions -->
+        <g stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-linecap="round">
+          <!-- 10° --><line x1="150.8" y1="12.2" x2="148.6" y2="19.1"/>
+          <!-- 20° --><line x1="169.7" y1="21.1" x2="165.7" y2="27.0"/>
+          <!-- 30° --><line x1="185.9" y1="35.9" x2="180.2" y2="40.1"/>
+          <!-- 60° --><line x1="214.1" y1="89.3" x2="208.4" y2="91.9"/>
+          <!-- 70° --><line x1="220.7" y1="112.8" x2="214.7" y2="113.3"/>
+          <!-- 80° --><line x1="220.9" y1="130" x2="214.9" y2="130"/>
+          <!-- 100° --><line x1="220.9" y1="148.8" x2="214.9" y2="148.1"/>
+          <!-- 110° --><line x1="220.7" y1="147.2" x2="214.7" y2="146.7"/>
+          <!-- 120° --><line x1="214.1" y1="170.7" x2="208.4" y2="168.1"/>
+          <!-- 150° --><line x1="185.9" y1="224.1" x2="180.2" y2="219.9"/>
+          <!-- 160° --><line x1="169.7" y1="238.9" x2="165.7" y2="233.0"/>
+          <!-- 170° --><line x1="150.8" y1="247.8" x2="148.6" y2="240.9"/>
+          <!-- 190° --><line x1="109.2" y1="247.8" x2="111.4" y2="240.9"/>
+          <!-- 200° --><line x1="90.3"  y1="238.9" x2="94.3"  y2="233.0"/>
+          <!-- 210° --><line x1="74.1"  y1="224.1" x2="79.8"  y2="219.9"/>
+          <!-- 240° --><line x1="45.9"  y1="170.7" x2="51.6"  y2="168.1"/>
+          <!-- 260° --><line x1="39.3"  y1="148.8" x2="45.3"  y2="148.1"/>
+          <!-- 270° --><line x1="39.1"  y1="130"   x2="45.1"  y2="130"/>
+          <!-- 280° --><line x1="39.3"  y1="111.2" x2="45.3"  y2="111.9"/>
+          <!-- 300° --><line x1="45.9"  y1="89.3"  x2="51.6"  y2="91.9"/>
+          <!-- 330° --><line x1="74.1"  y1="35.9"  x2="79.8"  y2="40.1"/>
+          <!-- 340° --><line x1="90.3"  y1="21.1"  x2="94.3"  y2="27.0"/>
+          <!-- 350° --><line x1="109.2" y1="12.2"  x2="111.4" y2="19.1"/>
         </g>
+
+        <!-- Intercardinal ticks (NE/SE/SW/NW at 45°) -->
+        <g stroke="rgba(255,255,255,0.2)" stroke-width="1.2" stroke-linecap="round">
+          <line x1="215.6" y1="44.4" x2="208.5" y2="51.5"/><!-- NE -->
+          <line x1="215.6" y1="215.6" x2="208.5" y2="208.5"/><!-- SE -->
+          <line x1="44.4"  y1="215.6" x2="51.5"  y2="208.5"/><!-- SW -->
+          <line x1="44.4"  y1="44.4"  x2="51.5"  y2="51.5"/><!-- NW -->
+        </g>
+
+        <!-- Cardinal ticks (N/E/S/W at 0°/90°/180°/270°) -->
+        <line x1="130" y1="4"   x2="130" y2="18"  stroke="#E8622B" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="130" y1="242" x2="130" y2="256" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="4"   y1="130" x2="18"  y2="130" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="242" y1="130" x2="256" y2="130" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+
+        <!-- Intercardinal text -->
+        <text x="211" y="50"  text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.22)" font-weight="600">NE</text>
+        <text x="211" y="214" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.22)" font-weight="600">SE</text>
+        <text x="50"  y="214" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.22)" font-weight="600">SW</text>
+        <text x="50"  y="50"  text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.22)" font-weight="600">NW</text>
+
+        <!-- Cardinal text -->
+        <text x="130" y="24"  text-anchor="middle" font-size="13" font-weight="800" fill="#E8622B" letter-spacing="0.5">N</text>
+        <text x="130" y="252" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.25)" font-weight="600">S</text>
+        <text x="249" y="134" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.25)" font-weight="600">E</text>
+        <text x="11"  y="134" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.25)" font-weight="600">W</text>
+
+        <!-- Compass needle -->
+        <g id="needle-group">
+          <!-- North — orange/red -->
+          <polygon points="130,24 136.5,130 130,143 123.5,130" fill="#E8622B"/>
+          <!-- South — dark -->
+          <polygon points="130,236 136.5,130 130,143 123.5,130" fill="#2a2640"/>
+          <!-- Center cap -->
+          <circle cx="130" cy="130" r="11"  fill="#09080e" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+          <circle cx="130" cy="130" r="4.5" fill="#E8622B"/>
+          <circle cx="130" cy="130" r="1.8" fill="#fff"/>
+        </g>
+
+        <!-- Bearing arrow (to nearest store) -->
         <g id="bearing-arrow" style="display:none">
-          <line x1="105" y1="105" x2="105" y2="28" stroke="#22C77A" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3" opacity="0.4"/>
-          <line x1="105" y1="105" x2="105" y2="50" stroke="#22C77A" stroke-width="2.5" stroke-linecap="round"/>
-          <polygon points="105,20 110,35 105,30 100,35" fill="#22C77A"/>
-          <circle cx="105" cy="105" r="5" fill="#22C77A"/>
+          <line x1="130" y1="130" x2="130" y2="32" stroke="#1DB87A" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="5 4" opacity="0.3"/>
+          <line x1="130" y1="130" x2="130" y2="60"  stroke="#1DB87A" stroke-width="2.5" stroke-linecap="round"/>
+          <polygon points="130,26 135.5,40 130,35 124.5,40" fill="#1DB87A"/>
+          <!-- Center dot -->
+          <circle cx="130" cy="130" r="8"   fill="rgba(29,184,122,0.15)" stroke="#1DB87A" stroke-width="1.5"/>
+          <circle cx="130" cy="130" r="3.5" fill="#1DB87A"/>
         </g>
       </svg>
     </div>
-    <div id="dist-pill"><span id="dist-val">—</span><span id="dist-unit">km away</span></div>
+
+    <!-- Distance pill -->
+    <div id="dist-pill">
+      <span id="dist-val">—</span>
+      <span id="dist-unit">km away</span>
+    </div>
   </div>
 
+  <!-- Info strip -->
   <div id="info-grid">
-    <div class="ic"><i class="ti ti-compass"></i><div class="lbl">Bearing</div><div class="val" id="i-bearing">—°</div></div>
-    <div class="ic"><i class="ti ti-walk"></i><div class="lbl">Walk time</div><div class="val" id="i-walk">—</div></div>
-    <div class="ic"><i class="ti ti-star-filled" style="color:#F5A833"></i><div class="lbl">Rating</div><div class="val" id="i-rating">—</div></div>
+    <div class="ic bear"><i class="ti ti-compass"></i><div class="lbl">Bearing</div><div class="val" id="i-bearing">—°</div></div>
+    <div class="ic walk"><i class="ti ti-walk"></i>   <div class="lbl">Walk</div>   <div class="val" id="i-walk">—</div></div>
+    <div class="ic rate"><i class="ti ti-star-filled"></i><div class="lbl">Rating</div><div class="val" id="i-rating">—</div></div>
   </div>
 
+  <!-- Store list -->
   <button id="list-toggle" onclick="toggleList()">
     <i class="ti ti-list"></i><span id="list-txt">Show nearby stores</span>
   </button>
   <div id="store-list"></div>
   <div id="err-box"></div>
 
+  <!-- Locate button -->
   <button id="locate-btn" onclick="startLocating()">
     <i class="ti ti-current-location"></i> Locate Nearest Store
   </button>
