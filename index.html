@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
   <link rel="icon" href="/icons/icon-192.png"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css"/>
-  <title>Liquor Finder</title>
+  <title>Spirits Finder</title>
   <style>
     :root {
       --bg:      #080608;
@@ -323,6 +323,32 @@
     }
     #locate-btn i { font-size:19px; }
 
+    /* ── Minimap ────────────────────────────────────────────── */
+    #minimap-section {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 14px 10px; gap: 6px;
+    }
+    #minimap-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 2.5px;
+      color: rgba(180,0,0,0.5); text-transform: uppercase;
+    }
+    #minimap-wrap {
+      position: relative; width: 150px; height: 150px;
+    }
+    #minimap-wrap::before {
+      content: ''; position: absolute; inset: -3px; border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(180,0,0,0.6), rgba(60,0,0,0.1), rgba(180,0,0,0.6));
+      z-index: 0;
+    }
+    #minimap-wrap::after {
+      content: ''; position: absolute; inset: -1px; border-radius: 50%;
+      background: var(--bg); z-index: 1; transform: scale(0.97);
+    }
+    #minimap {
+      display: block; border-radius: 50%;
+      position: relative; z-index: 2;
+    }
+
     /* Scrollbar */
     #store-list::-webkit-scrollbar { width:3px; }
     #store-list::-webkit-scrollbar-thumb { background: var(--s3); border-radius:10px; }
@@ -506,6 +532,14 @@
     <div class="ic bear"><i class="ti ti-compass"></i><div class="lbl">Bearing</div><div class="val" id="i-bearing">—°</div></div>
     <div class="ic walk"><i class="ti ti-walk"></i>   <div class="lbl">Walk</div>   <div class="val" id="i-walk">—</div></div>
     <div class="ic rate"><i class="ti ti-star-filled"></i><div class="lbl">Rating</div><div class="val" id="i-rating">—</div></div>
+  </div>
+
+  <!-- Game minimap -->
+  <div id="minimap-section">
+    <div id="minimap-label">Radar</div>
+    <div id="minimap-wrap">
+      <canvas id="minimap" width="150" height="150"></canvas>
+    </div>
   </div>
 
   <!-- Store list -->

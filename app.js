@@ -135,6 +135,7 @@ function onOrient(e) {
     : (360 - (e.alpha || 0)) % 360;
   document.getElementById('needle-group').style.transform = `rotate(${-compassHeading}deg)`;
   updateCompass(targetBearing);
+  drawMinimap();
 }
 function attachOrientation() {
   if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
@@ -278,6 +279,7 @@ function activateStore(idx) {
   // Load photo from nearbysearch ref first (fast)
   loadPhoto(s.photoRef);
   renderList();
+  drawMinimap();
 }
 
 // ── Store list ────────────────────────────────────────────────
@@ -336,6 +338,139 @@ function startLocating() {
   );
 }
 
+// ── Minimap ───────────────────────────────────────────────────
+function drawMinimap() {
+  if (!stores.length) return;
+  const canvas = document.getElementById('minimap');
+  if (!canvas) return;
+  const ctx  = canvas.getContext('2d');
+  const W    = canvas.width, H = canvas.height;
+  const cx   = W / 2, cy = H / 2;
+  const R    = W / 2 - 1;
+
+  // Use real or demo coordinates
+  const lat = userLat || 20.0059;
+  const lng = userLng || 73.7898;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Clip everything to circle
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Background
+  ctx.fillStyle = '#0c0408';
+  ctx.fillRect(0, 0, W, H);
+
+  // Scale: fit all stores with padding
+  const maxDistKm = Math.max(...stores.map(s => s.dist), 0.3) * 1.3;
+  const scale     = (R * 0.80) / maxDistKm; // px per km
+
+  // Rotate map heading-up (like GTA minimap)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-toRad(compassHeading));
+  ctx.translate(-cx, -cy);
+
+  // Range rings
+  [0.2, 0.5, 1, 2, 5].forEach(km => {
+    const r = km * scale;
+    if (r >= R) return;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,30,30,0.09)';
+    ctx.lineWidth   = 0.7;
+    ctx.stroke();
+  });
+
+  // Cross-hair lines
+  ctx.strokeStyle = 'rgba(255,30,30,0.07)';
+  ctx.lineWidth   = 0.5;
+  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
+
+  // Store dots
+  const cosLat = Math.cos(toRad(lat));
+  stores.forEach((s, i) => {
+    const dxKm = (s.lng - lng) * 111 * cosLat;
+    const dyKm = (s.lat - lat) * 111;
+    let px = cx + dxKm * scale;
+    let py = cy - dyKm * scale;
+
+    // Clamp to edge
+    const d = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+    if (d > R - 9) {
+      const a = Math.atan2(py - cy, px - cx);
+      px = cx + (R - 9) * Math.cos(a);
+      py = cy + (R - 9) * Math.sin(a);
+    }
+
+    const active = i === activeIdx;
+
+    if (active) {
+      // Outer glow ring
+      ctx.beginPath();
+      ctx.arc(px, py, 10, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,0,0,0.18)';
+      ctx.fill();
+      // Dot
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#DD0000';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,140,140,0.7)';
+      ctx.lineWidth   = 1.2;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(170,50,50,0.65)';
+      ctx.fill();
+    }
+
+    // Number label
+    ctx.fillStyle      = active ? '#fff' : 'rgba(255,255,255,0.3)';
+    ctx.font           = active ? 'bold 7px sans-serif' : '7px sans-serif';
+    ctx.textAlign      = 'center';
+    ctx.textBaseline   = 'bottom';
+    ctx.fillText(i + 1, px, py - 7);
+  });
+
+  ctx.restore(); // undo heading rotation
+
+  // User dot — always at center, never rotates
+  ctx.beginPath();
+  ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(59,158,232,0.15)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fillStyle   = '#3B9EE8';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+
+  // N label — fixed top, never rotates
+  ctx.fillStyle      = '#BB0000';
+  ctx.font           = 'bold 9px sans-serif';
+  ctx.textAlign      = 'center';
+  ctx.textBaseline   = 'top';
+  ctx.fillText('N', cx, 5);
+
+  ctx.restore(); // restore clip
+
+  // Outer border ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(160,0,0,0.55)';
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+}
+
 // ── Demo mode ─────────────────────────────────────────────────
 function demoMode(lat, lng) {
   const bLat = lat || 20.0059, bLng = lng || 73.7898;
@@ -378,6 +513,7 @@ function demoMode(lat, lng) {
     document.getElementById('needle-group').style.transform =
       `rotate(${-deg + Math.sin(Date.now()/700)*2}deg)`;
     updateCompass(targetBearing);
+    drawMinimap();
   }, 40);
 
   const btn = document.getElementById('locate-btn');
