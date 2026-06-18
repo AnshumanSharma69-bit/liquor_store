@@ -1,13 +1,10 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { ref } = req.query;
-
-  if (!ref) {
-    return res.status(400).json({ error: 'Missing photo reference' });
-  }
+  if (!ref) return res.status(400).json({ error: 'Missing ref' });
 
   try {
-    const photoRes = await fetch(
-      `https://google-map-places.p.rapidapi.com/maps/api/place/photo?maxwidth=600&photoreference=${ref}`,
+    const upstream = await fetch(
+      `https://google-map-places.p.rapidapi.com/maps/api/place/photo?maxwidth=600&photoreference=${encodeURIComponent(ref)}`,
       {
         headers: {
           'x-rapidapi-key':  'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c',
@@ -16,18 +13,22 @@ export default async function handler(req, res) {
       }
     );
 
-    if (!photoRes.ok) {
-      return res.status(photoRes.status).json({ error: 'Photo fetch failed' });
+    if (!upstream.ok) {
+      return res.status(upstream.status).json({ error: 'Upstream failed', status: upstream.status });
     }
 
-    const contentType = photoRes.headers.get('content-type') || 'image/jpeg';
-    const buffer = await photoRes.arrayBuffer();
+    const ct = upstream.headers.get('content-type') || 'image/jpeg';
+    if (!ct.startsWith('image')) {
+      return res.status(502).json({ error: 'Not an image', ct });
+    }
 
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // cache 24h
+    const buf = await upstream.arrayBuffer();
+    res.setHeader('Content-Type', ct);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.send(Buffer.from(buffer));
+    res.end(Buffer.from(buf));
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
+};
