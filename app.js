@@ -1,14 +1,18 @@
-// ── Config ───────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────
 const KEY     = 'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c';
 const HOST    = 'google-map-places.p.rapidapi.com';
 const HEADERS = { 'x-rapidapi-key': KEY, 'x-rapidapi-host': HOST };
 const DAYS    = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const FAV_KEY = 'sf_favs';
 
 // ── State ─────────────────────────────────────────────────────
 let compassHeading = 0, targetBearing = 0, demoTimer = null;
 let stores = [], activeIdx = 0, deferredPrompt = null;
-let searchRadius = 3000;   // default 3 km
+let searchRadius = 3000;
 let userLat = null, userLng = null;
+let watchId = null, storesSearched = false;
+let closeAlertShown = false, lastAlertIdx = -1;
+let isScanning = false, scanAngle = 0, scanFrameId = null;
 
 // ── PWA ───────────────────────────────────────────────────────
 window.addEventListener('beforeinstallprompt', e => {
@@ -25,11 +29,38 @@ function installApp() {
 }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
-// ── Radius selector ───────────────────────────────────────────
+// ── Radius ────────────────────────────────────────────────────
 function setRadius(btn) {
   document.querySelectorAll('.rpill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   searchRadius = parseInt(btn.dataset.r, 10);
+}
+
+// ── Favourites ────────────────────────────────────────────────
+function getFavs()       { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; } }
+function saveFavs(f)     { try { localStorage.setItem(FAV_KEY, JSON.stringify(f)); } catch {} }
+function isFav(placeId)  { return !!placeId && getFavs().some(f => f.id === placeId); }
+
+function toggleFav() {
+  const s = stores[activeIdx];
+  if (!s?.placeId) return;
+  let favs = getFavs();
+  const idx = favs.findIndex(f => f.id === s.placeId);
+  if (idx >= 0) favs.splice(idx, 1);
+  else favs.push({ id: s.placeId, name: s.name });
+  saveFavs(favs);
+  updateFavBtn();
+  renderList();
+}
+function updateFavBtn() {
+  const s   = stores[activeIdx];
+  const btn = document.getElementById('btn-fav');
+  if (!btn) return;
+  const on = isFav(s?.placeId);
+  const ic = btn.querySelector('i');
+  ic.className   = on ? 'ti ti-heart-filled' : 'ti ti-heart';
+  ic.style.color = on ? '#FF5C7A' : '';
+  btn.className  = on ? 'action-btn fav on' : 'action-btn fav';
 }
 
 // ── Math ──────────────────────────────────────────────────────
@@ -65,67 +96,55 @@ function updateCompass(b) {
   document.getElementById('compass-wrap').classList.add('active');
   document.getElementById('i-bearing').textContent = Math.round(b) + '°';
 }
+function setHdrCoords(lat, lng) {
+  document.getElementById('hdr-lat').textContent = 'LAT ' + lat.toFixed(4);
+  document.getElementById('hdr-lng').textContent = 'LNG ' + lng.toFixed(4);
+}
 
 // ── Skeleton ──────────────────────────────────────────────────
 function showSkeleton() {
-  document.getElementById('skel-photo').classList.add('on');
-  document.getElementById('skel-title').classList.add('on');
-  document.getElementById('skel-meta').classList.add('on');
+  ['skel-photo','skel-title','skel-meta'].forEach(id => document.getElementById(id).classList.add('on'));
   document.getElementById('store-title').style.display = 'none';
   document.getElementById('store-meta').style.display  = 'none';
 }
 function hideSkeleton() {
-  document.getElementById('skel-photo').classList.remove('on');
-  document.getElementById('skel-title').classList.remove('on');
-  document.getElementById('skel-meta').classList.remove('on');
+  ['skel-photo','skel-title','skel-meta'].forEach(id => document.getElementById(id).classList.remove('on'));
   document.getElementById('store-title').style.display = '';
   document.getElementById('store-meta').style.display  = '';
 }
 
-// ── Photo loader ──────────────────────────────────────────────
+// ── Photo ─────────────────────────────────────────────────────
 function loadPhoto(photoRef) {
-  const img         = document.getElementById('store-photo');
-  const placeholder = document.getElementById('photo-placeholder');
-  img.style.display = 'none';
-  placeholder.style.display = 'flex';
-  img.src = '';
+  const img = document.getElementById('store-photo');
+  const ph  = document.getElementById('photo-placeholder');
+  img.style.display = 'none'; ph.style.display = 'flex'; img.src = '';
   if (!photoRef) return;
-  img.onload = () => { img.style.display = 'block'; placeholder.style.display = 'none'; };
-  img.onerror = () => { img.style.display = 'none'; placeholder.style.display = 'flex'; };
+  img.onload  = () => { img.style.display = 'block'; ph.style.display = 'none'; };
+  img.onerror = () => { img.style.display = 'none';  ph.style.display = 'flex'; };
   img.src = `/api/photo?ref=${encodeURIComponent(photoRef)}`;
 }
 
-// ── Weekly hours ──────────────────────────────────────────────
+// ── Hours ─────────────────────────────────────────────────────
 function renderHours(weekdayText) {
-  const list    = document.getElementById('hours-list');
-  const today   = new Date().getDay(); // 0 = Sunday
+  const list  = document.getElementById('hours-list');
+  const today = new Date().getDay();
   list.innerHTML = '';
-
-  // weekday_text starts Monday (index 0 = Monday in Google's format)
-  // Reorder to match JS day (0 = Sunday)
-  // Google: 0=Mon,1=Tue,...,6=Sun
-  // JS:     0=Sun,1=Mon,...,6=Sat
   weekdayText.forEach((line, i) => {
-    const googleDayIdx = i;                          // 0=Mon..6=Sun
-    const jsDayIdx     = (i + 1) % 7;               // 0=Sun,1=Mon..6=Sat
-    const isToday      = jsDayIdx === today;
+    const jsDayIdx = (i + 1) % 7;
     const [day, ...rest] = line.split(': ');
     const time = rest.join(': ') || 'Closed';
     const row  = document.createElement('div');
-    row.className = 'hour-row' + (isToday ? ' today' : '');
+    row.className = 'hour-row' + (jsDayIdx === today ? ' today' : '');
     row.innerHTML = `<span class="day">${day}</span><span class="time">${time}</span>`;
     list.appendChild(row);
   });
 }
-
 function toggleHours() {
-  const badge = document.getElementById('open-badge');
   const panel = document.getElementById('hours-panel');
-  const list  = document.getElementById('hours-list');
-  if (!list.children.length) return; // no hours loaded yet
-  const isOpen = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  badge.classList.toggle('expanded', !isOpen);
+  const badge = document.getElementById('open-badge');
+  if (!document.getElementById('hours-list').children.length) return;
+  panel.classList.toggle('open');
+  badge.classList.toggle('expanded');
 }
 
 // ── Device orientation ────────────────────────────────────────
@@ -135,6 +154,7 @@ function onOrient(e) {
     : (360 - (e.alpha || 0)) % 360;
   document.getElementById('needle-group').style.transform = `rotate(${-compassHeading}deg)`;
   updateCompass(targetBearing);
+  updateNavCompass(targetBearing);
   drawMinimap();
 }
 function attachOrientation() {
@@ -145,6 +165,71 @@ function attachOrientation() {
   } else {
     window.addEventListener('deviceorientation', onOrient);
   }
+}
+
+// ── Proximity Alert ───────────────────────────────────────────
+function checkProximity(store) {
+  if (!store) return;
+  const isClose  = store.dist < 0.2; // 200m threshold
+  const sameStore = lastAlertIdx === activeIdx;
+
+  if (isClose && (!sameStore || !closeAlertShown)) {
+    lastAlertIdx = activeIdx;
+    closeAlertShown = true;
+    showCloseAlert(store);
+  } else if (!isClose && sameStore && closeAlertShown) {
+    closeAlertShown = false;
+    hideCloseAlert();
+  }
+}
+function showCloseAlert(store) {
+  const el = document.getElementById('close-alert');
+  document.getElementById('close-dist').textContent = Math.round(store.dist * 1000) + 'm away';
+  el.classList.add('show');
+  if (navigator.vibrate) navigator.vibrate([150, 80, 150, 80, 300]);
+  const cw = document.getElementById('compass-wrap');
+  cw.classList.add('close-pulse');
+  setTimeout(() => cw.classList.remove('close-pulse'), 3000);
+  setTimeout(hideCloseAlert, 6000);
+}
+function hideCloseAlert() {
+  document.getElementById('close-alert').classList.remove('show');
+}
+
+// ── Live position update (watchPosition callback) ─────────────
+function updateLivePosition(lat, lng) {
+  userLat = lat; userLng = lng;
+  setHdrCoords(lat, lng);
+
+  if (!storesSearched) {
+    storesSearched = true;
+    setStatus('Searching nearby stores…', '#F5A833');
+    fetchStores(lat, lng);
+    return;
+  }
+  if (!stores.length) return;
+
+  // Recalculate all distances + bearings live
+  stores = stores.map(s => ({
+    ...s,
+    dist:    haversine(lat, lng, s.lat, s.lng),
+    bearing: calcBearing(lat, lng, s.lat, s.lng),
+  }));
+
+  const active = stores[activeIdx];
+  targetBearing = active.bearing;
+  updateCompass(active.bearing);
+
+  // Update distance + walk display
+  document.getElementById('dist-val').textContent  = active.dist < 1 ? Math.round(active.dist * 1000) : active.dist.toFixed(1);
+  document.getElementById('dist-unit').textContent = active.dist < 1 ? 'm' : 'km';
+  document.getElementById('i-walk').textContent    = Math.round(active.dist * 13) + ' min';
+
+  checkProximity(active);
+  drawMinimap();
+  updateNavCompass(active.bearing);
+  updateNavDistance();
+  renderList();
 }
 
 // ── API: nearby stores ────────────────────────────────────────
@@ -170,25 +255,31 @@ async function fetchStores(lat, lng) {
         isOpen:   p.opening_hours?.open_now ?? null,
       })).sort((a, b) => a.dist - b.dist);
 
-      setStatus(`Found ${stores.length} store(s) nearby`, '#22C77A');
+      setStatus(`Live · ${stores.length} stores nearby`, '#CC0000');
+      document.getElementById('status-dot').classList.add('active');
       document.getElementById('list-toggle').style.display = 'flex';
+      stopScanning();
       activateStore(0);
       fetchDetails(0);
-      btn.innerHTML = '<i class="ti ti-refresh"></i> Refresh';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-radar"></i> Live Tracking';
     } else {
       hideSkeleton();
-      setStatus('No stores found — try a larger radius', '#FF5C7A');
-      showErr('Increase the radius above and tap Refresh.');
+      stopScanning();
+      setStatus('No stores found — try larger radius', '#FF5C7A');
+      showErr('Increase the range above and tap Retry.');
+      btn.disabled = false;
       btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
     }
   } catch (err) {
     hideSkeleton();
-    setStatus('API error — showing demo', '#F5A833');
-    showErr('RapidAPI call failed: ' + err.message);
+    stopScanning();
+    setStatus('API error — demo mode', '#F5A833');
+    showErr('RapidAPI: ' + err.message);
     demoMode(lat, lng);
+    btn.disabled = false;
     btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
   }
-  btn.disabled = false;
 }
 
 // ── API: place details ────────────────────────────────────────
@@ -202,39 +293,28 @@ async function fetchDetails(idx) {
     );
     const data = await res.json();
     const d    = data.result || {};
-
     hideSkeleton();
     if (idx !== activeIdx) return;
 
-    // Phone
     if (d.formatted_phone_number) {
       const btn = document.getElementById('btn-call');
       btn.href = 'tel:' + d.formatted_phone_number.replace(/\s/g, '');
       btn.className = 'action-btn call';
     }
-
-    // Hours
     if (d.opening_hours) {
       const open  = d.opening_hours.open_now;
       const badge = document.getElementById('open-badge');
-      badge.className     = open ? 'open' : 'closed';
+      badge.className = open ? 'open' : 'closed';
       badge.style.display = 'flex';
       document.getElementById('open-txt').textContent          = open ? 'Open now' : 'Closed';
       document.getElementById('store-hours-short').textContent = open ? 'Open now' : 'Closed';
-      document.getElementById('store-hours-short').style.color = open ? '#22C77A' : '#FF5C7A';
+      document.getElementById('store-hours-short').style.color = open ? '#1DB87A' : '#FF5C7A';
       stores[idx].isOpen = open;
-
-      // Weekly schedule
-      if (d.opening_hours.weekday_text?.length) {
-        renderHours(d.opening_hours.weekday_text);
-      }
+      if (d.opening_hours.weekday_text?.length) renderHours(d.opening_hours.weekday_text);
       renderList();
     }
-
-    // Better photo from details
     const betterRef = d.photos?.[0]?.photo_reference;
     if (betterRef) loadPhoto(betterRef);
-
   } catch { hideSkeleton(); }
 }
 
@@ -244,39 +324,34 @@ function activateStore(idx) {
   const s = stores[idx];
   targetBearing = s.bearing;
   updateCompass(s.bearing);
-
   showSkeleton();
 
-  // Close hours panel when switching store
   document.getElementById('hours-panel').classList.remove('open');
   document.getElementById('open-badge').classList.remove('expanded');
   document.getElementById('hours-list').innerHTML = '';
 
-  // Title + distance
   document.getElementById('store-title').textContent = s.name;
-  document.getElementById('store-title').style.color = '#F0EDF8';
-  document.getElementById('dist-val').textContent    = s.dist < 1 ? Math.round(s.dist*1000) : s.dist.toFixed(1);
-  document.getElementById('dist-unit').textContent   = s.dist < 1 ? 'm away' : 'km away';
-  document.getElementById('i-walk').textContent      = Math.round(s.dist*13) + ' min';
-  document.getElementById('i-rating').textContent    = s.rating || '—';
-  document.getElementById('store-rating').textContent = s.rating ? '★'.repeat(Math.round(s.rating))+'  '+s.rating : '';
+  document.getElementById('store-title').style.color = '#F2EEF2';
 
-  // Reset open badge + hours short
+  document.getElementById('dist-val').textContent  = s.dist < 1 ? Math.round(s.dist*1000) : s.dist.toFixed(1);
+  document.getElementById('dist-unit').textContent = s.dist < 1 ? 'm' : 'km';
+  document.getElementById('i-walk').textContent    = Math.round(s.dist*13) + ' min';
+  document.getElementById('i-rating').textContent  = s.rating || '—';
+  document.getElementById('store-rating').textContent = s.rating ? '★'.repeat(Math.round(s.rating)) + '  ' + s.rating : '';
+
   document.getElementById('open-badge').style.display      = 'none';
   document.getElementById('open-badge').className          = '';
   document.getElementById('store-hours-short').textContent = '';
 
-  // Directions always active
   const dirBtn = document.getElementById('btn-dir');
   dirBtn.className = 'action-btn dir';
   dirBtn.href      = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
 
-  // Call disabled until details
   const callBtn = document.getElementById('btn-call');
   callBtn.className = 'action-btn call off';
   callBtn.href      = '#';
 
-  // Load photo from nearbysearch ref first (fast)
+  updateFavBtn();
   loadPhoto(s.photoRef);
   renderList();
   drawMinimap();
@@ -284,58 +359,203 @@ function activateStore(idx) {
 
 // ── Store list ────────────────────────────────────────────────
 function renderList() {
-  const el = document.getElementById('store-list');
+  const el   = document.getElementById('store-list');
+  const favs = getFavs();
   el.innerHTML = '';
   stores.forEach((s, i) => {
-    const div = document.createElement('div');
+    const div    = document.createElement('div');
     div.className = 'sl-item' + (i === activeIdx ? ' active' : '');
-    const badge = s.isOpen === true  ? '<span class="sl-badge open">Open</span>'
-                : s.isOpen === false ? '<span class="sl-badge closed">Closed</span>' : '';
+    const badge  = s.isOpen === true  ? '<span class="sl-badge open">Open</span>'
+                 : s.isOpen === false ? '<span class="sl-badge closed">Closed</span>' : '';
+    const faved  = isFav(s.placeId);
     div.innerHTML = `
       <span class="sl-num">${i+1}</span>
-      <div>
+      <div style="flex:1">
         <div class="sl-name">${s.name}</div>
         <div class="sl-meta">${fmtDist(s.dist)} · ${dirLabel(s.bearing)}${s.rating ? ' · ★'+s.rating : ''}</div>
-      </div>${badge}`;
+      </div>
+      ${badge}
+      <button class="sl-fav${faved?' on':''}" onclick="event.stopPropagation();quickFav('${s.placeId}','${s.name.replace(/'/g,'\\\'')}')" title="Favourite">
+        <i class="ti ti-heart${faved?'-filled':''}"></i>
+      </button>`;
     div.onclick = () => { activateStore(i); fetchDetails(i); };
     el.appendChild(div);
   });
+}
+
+function quickFav(placeId, name) {
+  if (!placeId || placeId === 'null') return;
+  let favs = getFavs();
+  const idx = favs.findIndex(f => f.id === placeId);
+  if (idx >= 0) favs.splice(idx, 1);
+  else favs.push({ id: placeId, name });
+  saveFavs(favs);
+  updateFavBtn();
+  renderList();
 }
 
 function toggleList() {
   const el   = document.getElementById('store-list');
   const open = el.style.display === 'flex';
   el.style.display = open ? 'none' : 'flex';
-  document.getElementById('list-txt').textContent = open ? 'Show nearby stores' : 'Hide store list';
+  document.getElementById('list-txt').textContent = open ? 'Show nearby targets' : 'Hide store list';
 }
 
-// ── Start locating ────────────────────────────────────────────
+// ── Start locating (watchPosition) ───────────────────────────
 function startLocating() {
+  // Clear any existing watch
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  storesSearched    = false;
+  closeAlertShown   = false;
+  lastAlertIdx      = -1;
+
   const btn = document.getElementById('locate-btn');
   btn.disabled  = true;
-  btn.innerHTML = '<i class="ti ti-loader-2"></i> Locating…';
+  btn.innerHTML = '<i class="ti ti-loader-2"></i> Acquiring Signal…';
   setStatus('Getting your location…', '#F5A833');
   document.getElementById('err-box').style.display = 'none';
+  startScanning();
 
   if (!navigator.geolocation) {
     setStatus('Geolocation not supported', '#FF5C7A');
     btn.disabled = false; return;
   }
-  navigator.geolocation.getCurrentPosition(
+
+  watchId = navigator.geolocation.watchPosition(
     pos => {
-      userLat = pos.coords.latitude; userLng = pos.coords.longitude;
-      setStatus('Searching nearby stores…', '#F5A833');
-      fetchStores(userLat, userLng);
+      updateLivePosition(pos.coords.latitude, pos.coords.longitude);
       attachOrientation();
     },
     () => {
-      setStatus('Location denied — demo mode', '#F5A833');
-      btn.disabled  = false;
-      btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
-      demoMode();
+      if (!storesSearched) {
+        setStatus('Location denied — demo mode', '#F5A833');
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="ti ti-current-location"></i> Retry';
+        demoMode();
+      }
     },
-    { timeout: 10000, enableHighAccuracy: true }
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
+}
+
+// ── Scanning animation ────────────────────────────────────────
+function startScanning() {
+  isScanning = true; scanAngle = 0;
+  document.getElementById('compass-wrap').classList.add('scanning');
+  if (scanFrameId) cancelAnimationFrame(scanFrameId);
+  animateScan();
+}
+function stopScanning() {
+  isScanning = false;
+  document.getElementById('compass-wrap').classList.remove('scanning');
+  if (scanFrameId) { cancelAnimationFrame(scanFrameId); scanFrameId = null; }
+  drawMinimap();
+}
+function animateScan() {
+  if (!isScanning) return;
+  const canvas = document.getElementById('minimap');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = W/2 - 1;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#0c0408'; ctx.fillRect(0, 0, W, H);
+
+  // Grid rings
+  [22, 45, 68].forEach(r => {
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,30,30,0.08)'; ctx.lineWidth = 0.7; ctx.stroke();
+  });
+  ctx.strokeStyle = 'rgba(255,30,30,0.06)'; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(cx,cy-R); ctx.lineTo(cx,cy+R); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy); ctx.stroke();
+
+  // Sweep trail
+  ctx.save();
+  ctx.translate(cx, cy);
+  const trail = 1.4, steps = 36;
+  for (let i = 0; i < steps; i++) {
+    const a  = scanAngle - (i/steps)*trail;
+    const op = (1 - i/steps) * 0.32;
+    ctx.beginPath(); ctx.moveTo(0,0);
+    ctx.arc(0, 0, R-1, a, a + trail/steps + 0.01);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(170,0,0,${op})`; ctx.fill();
+  }
+  // Leading line
+  ctx.beginPath(); ctx.moveTo(0,0);
+  ctx.lineTo((R-1)*Math.cos(scanAngle), (R-1)*Math.sin(scanAngle));
+  ctx.strokeStyle = 'rgba(220,20,20,0.9)'; ctx.lineWidth = 1.8;
+  ctx.shadowColor = 'rgba(200,0,0,0.5)'; ctx.shadowBlur = 5; ctx.stroke();
+  ctx.restore();
+
+  // Blinking center dot
+  const blink = Math.sin(Date.now()/260) > 0;
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.fillStyle = blink ? '#3490D8' : 'rgba(52,144,216,0.25)'; ctx.fill();
+
+  // Scanning text
+  ctx.fillStyle = 'rgba(180,0,0,0.38)';
+  ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('SCANNING', cx, cy + 19);
+
+  // N label
+  ctx.fillStyle = '#BB0000'; ctx.font = 'bold 9px sans-serif'; ctx.textBaseline = 'top';
+  ctx.fillText('N', cx, 5);
+
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(160,0,0,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  scanAngle += 0.04;
+  scanFrameId = requestAnimationFrame(animateScan);
+}
+
+// ── Navigate mode ─────────────────────────────────────────────
+function enterNavMode() {
+  const s = stores[activeIdx];
+  if (!s) return;
+  document.getElementById('nav-store-name').textContent = s.name;
+  const parts = [s.rating ? '★ '+s.rating : '', s.isOpen === true ? 'Open now' : s.isOpen === false ? 'Closed' : ''].filter(Boolean);
+  document.getElementById('nav-store-meta').textContent = parts.join(' · ');
+  updateNavCompass(targetBearing);
+  updateNavDistance();
+  document.getElementById('nav-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function exitNavMode() {
+  document.getElementById('nav-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function updateNavCompass(bearing) {
+  const overlay = document.getElementById('nav-overlay');
+  if (!overlay?.classList.contains('active')) return;
+  const rel    = (bearing - compassHeading + 360) % 360;
+  const needle = document.getElementById('nav-needle');
+  const arrow  = document.getElementById('nav-bearing-arrow');
+  const bt     = document.getElementById('nav-bearing-text');
+  const dt     = document.getElementById('nav-dir-text');
+  if (needle) needle.style.transform = `rotate(${-compassHeading}deg)`;
+  if (arrow)  { arrow.style.transform = `rotate(${rel}deg)`; arrow.style.display = ''; }
+  if (bt) bt.textContent = Math.round(bearing) + '°';
+  if (dt) dt.textContent = dirLabel(bearing);
+}
+function updateNavDistance() {
+  const overlay = document.getElementById('nav-overlay');
+  if (!overlay?.classList.contains('active')) return;
+  const s = stores[activeIdx]; if (!s) return;
+  const dv = document.getElementById('nav-dist-val');
+  const du = document.getElementById('nav-dist-unit');
+  const wv = document.getElementById('nav-walk-val');
+  if (dv) dv.textContent = s.dist < 1 ? Math.round(s.dist*1000) : s.dist.toFixed(2);
+  if (du) du.textContent = s.dist < 1 ? 'm' : 'km';
+  if (wv) wv.textContent = Math.round(s.dist*13) + ' min';
 }
 
 // ── Minimap ───────────────────────────────────────────────────
@@ -343,176 +563,120 @@ function drawMinimap() {
   if (!stores.length) return;
   const canvas = document.getElementById('minimap');
   if (!canvas) return;
-  const ctx  = canvas.getContext('2d');
-  const W    = canvas.width, H = canvas.height;
-  const cx   = W / 2, cy = H / 2;
-  const R    = W / 2 - 1;
-
-  // Use real or demo coordinates
-  const lat = userLat || 20.0059;
-  const lng = userLng || 73.7898;
+  const ctx = canvas.getContext('2d');
+  const W   = canvas.width, H = canvas.height;
+  const cx  = W/2, cy = H/2, R = W/2 - 1;
+  const lat = userLat || 20.0059, lng = userLng || 73.7898;
 
   ctx.clearRect(0, 0, W, H);
-
-  // Clip everything to circle
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.clip();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.clip();
 
-  // Background
-  ctx.fillStyle = '#0c0408';
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0c0408'; ctx.fillRect(0, 0, W, H);
 
-  // Scale: fit all stores with padding
   const maxDistKm = Math.max(...stores.map(s => s.dist), 0.3) * 1.3;
-  const scale     = (R * 0.80) / maxDistKm; // px per km
+  const scale     = (R * 0.80) / maxDistKm;
 
-  // Rotate map heading-up (like GTA minimap)
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-toRad(compassHeading));
   ctx.translate(-cx, -cy);
 
-  // Range rings
   [0.2, 0.5, 1, 2, 5].forEach(km => {
     const r = km * scale;
     if (r >= R) return;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,30,30,0.09)';
-    ctx.lineWidth   = 0.7;
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,30,30,0.09)'; ctx.lineWidth = 0.7; ctx.stroke();
   });
 
-  // Cross-hair lines
-  ctx.strokeStyle = 'rgba(255,30,30,0.07)';
-  ctx.lineWidth   = 0.5;
-  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,30,30,0.07)'; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(cx, cy-R); ctx.lineTo(cx, cy+R); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-R, cy); ctx.lineTo(cx+R, cy); ctx.stroke();
 
-  // Store dots
   const cosLat = Math.cos(toRad(lat));
   stores.forEach((s, i) => {
     const dxKm = (s.lng - lng) * 111 * cosLat;
     const dyKm = (s.lat - lat) * 111;
-    let px = cx + dxKm * scale;
-    let py = cy - dyKm * scale;
-
-    // Clamp to edge
-    const d = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
-    if (d > R - 9) {
-      const a = Math.atan2(py - cy, px - cx);
-      px = cx + (R - 9) * Math.cos(a);
-      py = cy + (R - 9) * Math.sin(a);
-    }
+    let px = cx + dxKm * scale, py = cy - dyKm * scale;
+    const d = Math.sqrt((px-cx)**2 + (py-cy)**2);
+    if (d > R-9) { const a = Math.atan2(py-cy, px-cx); px = cx+(R-9)*Math.cos(a); py = cy+(R-9)*Math.sin(a); }
 
     const active = i === activeIdx;
-
     if (active) {
-      // Outer glow ring
-      ctx.beginPath();
-      ctx.arc(px, py, 10, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(200,0,0,0.18)';
-      ctx.fill();
-      // Dot
-      ctx.beginPath();
-      ctx.arc(px, py, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#DD0000';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,140,140,0.7)';
-      ctx.lineWidth   = 1.2;
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(200,0,0,0.18)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2);
+      ctx.fillStyle = '#DD0000'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,140,140,0.7)'; ctx.lineWidth = 1.2; ctx.stroke();
     } else {
-      ctx.beginPath();
-      ctx.arc(px, py, 3, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(170,50,50,0.65)';
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI*2);
+      ctx.fillStyle = isFav(s.placeId) ? '#FF5C7A' : 'rgba(170,50,50,0.65)'; ctx.fill();
     }
-
-    // Number label
-    ctx.fillStyle      = active ? '#fff' : 'rgba(255,255,255,0.3)';
-    ctx.font           = active ? 'bold 7px sans-serif' : '7px sans-serif';
-    ctx.textAlign      = 'center';
-    ctx.textBaseline   = 'bottom';
-    ctx.fillText(i + 1, px, py - 7);
+    ctx.fillStyle = active ? '#fff' : 'rgba(255,255,255,0.3)';
+    ctx.font = active ? 'bold 7px sans-serif' : '7px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(i+1, px, py-7);
   });
 
-  ctx.restore(); // undo heading rotation
+  ctx.restore();
 
-  // User dot — always at center, never rotates
-  ctx.beginPath();
-  ctx.arc(cx, cy, 11, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(59,158,232,0.15)';
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(59,158,232,0.15)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#3B9EE8'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
 
-  ctx.beginPath();
-  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-  ctx.fillStyle   = '#3B9EE8';
-  ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth   = 1.5;
-  ctx.stroke();
-
-  // N label — fixed top, never rotates
-  ctx.fillStyle      = '#BB0000';
-  ctx.font           = 'bold 9px sans-serif';
-  ctx.textAlign      = 'center';
-  ctx.textBaseline   = 'top';
+  ctx.fillStyle = '#BB0000'; ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   ctx.fillText('N', cx, 5);
 
-  ctx.restore(); // restore clip
-
-  // Outer border ring
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(160,0,0,0.55)';
-  ctx.lineWidth   = 1.5;
-  ctx.stroke();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(160,0,0,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
 }
 
 // ── Demo mode ─────────────────────────────────────────────────
 function demoMode(lat, lng) {
   const bLat = lat || 20.0059, bLng = lng || 73.7898;
   stores = [
-    { name: 'Nashik Wine Depot',   dlat:  0.012, dlng:  0.008, rating: 4.2, isOpen: true  },
-    { name: 'Grape & Grain Wines', dlat: -0.005, dlng:  0.015, rating: 4.5, isOpen: false },
-    { name: 'City Liquor Shop',    dlat:  0.009, dlng: -0.011, rating: 3.9, isOpen: true  },
+    { name:'Nashik Wine Depot',   dlat: 0.012, dlng: 0.008, rating:4.2, isOpen:true  },
+    { name:'Grape & Grain Wines', dlat:-0.005, dlng: 0.015, rating:4.5, isOpen:false },
+    { name:'City Liquor Shop',    dlat: 0.009, dlng:-0.011, rating:3.9, isOpen:true  },
   ].map(s => ({
-    name: s.name, rating: s.rating, isOpen: s.isOpen,
-    lat:  bLat + s.dlat, lng: bLng + s.dlng,
-    dist: haversine(bLat, bLng, bLat+s.dlat, bLng+s.dlng),
-    bearing: calcBearing(bLat, bLng, bLat+s.dlat, bLng+s.dlng),
-    placeId: null, photoRef: null,
+    name:s.name, rating:s.rating, isOpen:s.isOpen,
+    lat:bLat+s.dlat, lng:bLng+s.dlng,
+    dist:    haversine(bLat,bLng,bLat+s.dlat,bLng+s.dlng),
+    bearing: calcBearing(bLat,bLng,bLat+s.dlat,bLng+s.dlng),
+    placeId:null, photoRef:null,
   }));
 
-  // Demo hours
   const demoHours = [
     'Monday: 10:00 AM – 10:00 PM','Tuesday: 10:00 AM – 10:00 PM',
     'Wednesday: 10:00 AM – 10:00 PM','Thursday: 10:00 AM – 10:00 PM',
     'Friday: 10:00 AM – 11:00 PM','Saturday: 10:00 AM – 11:00 PM','Sunday: Closed',
   ];
 
-  setStatus('Demo mode — 3 stores shown', '#22C77A');
+  setStatus('Demo mode · 3 stores shown', '#CC0000');
+  document.getElementById('status-dot').classList.add('active');
   document.getElementById('list-toggle').style.display = 'flex';
-  activateStore(0);
-  hideSkeleton();
+  activateStore(0); hideSkeleton(); stopScanning();
 
   const badge = document.getElementById('open-badge');
   badge.className = 'open'; badge.style.display = 'flex';
   document.getElementById('open-txt').textContent          = 'Open now';
   document.getElementById('store-hours-short').textContent = 'Open now';
-  document.getElementById('store-hours-short').style.color = '#22C77A';
+  document.getElementById('store-hours-short').style.color = '#1DB87A';
   document.getElementById('btn-dir').className = 'action-btn dir';
   renderHours(demoHours);
 
   if (demoTimer) clearInterval(demoTimer);
   let deg = 0;
   demoTimer = setInterval(() => {
-    deg = (deg + 1) % 360; compassHeading = deg;
+    deg = (deg+1)%360; compassHeading = deg;
     document.getElementById('needle-group').style.transform =
       `rotate(${-deg + Math.sin(Date.now()/700)*2}deg)`;
     updateCompass(targetBearing);
+    updateNavCompass(targetBearing);
     drawMinimap();
   }, 40);
 
