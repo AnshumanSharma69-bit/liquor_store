@@ -13,6 +13,7 @@ let userLat = null, userLng = null;
 let watchId = null, storesSearched = false;
 let closeAlertShown = false, lastAlertIdx = -1;
 let isScanning = false, scanAngle = 0, scanFrameId = null;
+let swipeStartX = 0, swipeStartY = 0, swipeLocked = false;
 
 // ── PWA ───────────────────────────────────────────────────────
 window.addEventListener('beforeinstallprompt', e => {
@@ -259,6 +260,7 @@ async function fetchStores(lat, lng) {
       document.getElementById('status-dot').classList.add('active');
       document.getElementById('list-toggle').style.display = 'flex';
       stopScanning();
+      initSwipe();
       activateStore(0);
       fetchDetails(0);
       btn.disabled = false;
@@ -355,6 +357,7 @@ function activateStore(idx) {
   loadPhoto(s.photoRef);
   renderList();
   drawMinimap();
+  updateDots();
 }
 
 // ── Store list ────────────────────────────────────────────────
@@ -439,6 +442,86 @@ function startLocating() {
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
+}
+
+// ── Swipe between stores ──────────────────────────────────────
+function initSwipe() {
+  const card    = document.getElementById('store-card');
+  const overlay = document.getElementById('photo-overlay');
+  if (!card || card._swipeInit) return;
+  card._swipeInit = true;
+
+  card.addEventListener('touchstart', e => {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeLocked = false;
+    overlay.style.transition = 'none';
+  }, { passive: true });
+
+  card.addEventListener('touchmove', e => {
+    if (swipeLocked || !stores.length) return;
+    const dx = e.touches[0].clientX - swipeStartX;
+    const dy = e.touches[0].clientY - swipeStartY;
+    if (Math.abs(dx) < 8 || Math.abs(dy) > Math.abs(dx)) return;
+    overlay.style.transition = 'none';
+    overlay.style.transform  = `translateX(${dx * 0.25}px)`;
+  }, { passive: true });
+
+  card.addEventListener('touchend', e => {
+    if (swipeLocked || !stores.length) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+
+    overlay.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
+    overlay.style.transform  = 'translateX(0)';
+
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+
+    if (dx < 0 && activeIdx < stores.length - 1) animateSwipe(activeIdx + 1, 'left');
+    else if (dx > 0 && activeIdx > 0)             animateSwipe(activeIdx - 1, 'right');
+  }, { passive: true });
+}
+
+function animateSwipe(newIdx, dir) {
+  swipeLocked = true;
+  const overlay = document.getElementById('photo-overlay');
+  const exitX   = dir === 'left' ? '-45px' : '45px';
+  const enterX  = dir === 'left' ? '45px'  : '-45px';
+
+  overlay.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
+  overlay.style.transform  = `translateX(${exitX})`;
+  overlay.style.opacity    = '0';
+
+  setTimeout(() => {
+    activateStore(newIdx);
+    fetchDetails(newIdx);
+    overlay.style.transition = 'none';
+    overlay.style.transform  = `translateX(${enterX})`;
+    overlay.style.opacity    = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      overlay.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+      overlay.style.transform  = 'translateX(0)';
+      overlay.style.opacity    = '1';
+      setTimeout(() => { swipeLocked = false; }, 240);
+    }));
+  }, 180);
+}
+
+function updateDots() {
+  const el = document.getElementById('store-dots');
+  if (!el) return;
+  if (stores.length <= 1) { el.classList.remove('visible'); return; }
+  el.classList.add('visible');
+  el.innerHTML = '';
+  stores.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'store-dot' + (i === activeIdx ? ' active' : '');
+    dot.onclick   = () => {
+      if (i === activeIdx || swipeLocked) return;
+      animateSwipe(i, i > activeIdx ? 'left' : 'right');
+    };
+    el.appendChild(dot);
+  });
 }
 
 // ── Scanning animation ────────────────────────────────────────
@@ -660,6 +743,7 @@ function demoMode(lat, lng) {
   document.getElementById('status-dot').classList.add('active');
   document.getElementById('list-toggle').style.display = 'flex';
   activateStore(0); hideSkeleton(); stopScanning();
+  initSwipe();
 
   const badge = document.getElementById('open-badge');
   badge.className = 'open'; badge.style.display = 'flex';
