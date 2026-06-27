@@ -413,6 +413,22 @@
     .nav-info-val { font-size: 19px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
     .nav-info-lbl { font-size: 8px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
 
+    /* ── Store swipe dots ── */
+    #store-dots {
+      display: none; justify-content: center; align-items: center;
+      gap: 6px; padding: 10px 14px 2px;
+    }
+    #store-dots.visible { display: flex; }
+    .store-dot {
+      height: 6px; width: 6px; border-radius: 3px;
+      background: rgba(255,255,255,0.15); cursor: pointer;
+      transition: background 0.25s, width 0.25s;
+    }
+    .store-dot.active { background: var(--red2); width: 20px; }
+
+    /* Photo overlay swipe transition */
+    #photo-overlay { transition: transform 0.22s ease, opacity 0.22s ease; }
+
     /* Scrollbar */
     #store-list::-webkit-scrollbar { width: 2px; }
     #store-list::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 10px; }
@@ -480,6 +496,8 @@
     </div>
 
     <div id="hours-panel"><div id="hours-list"></div></div>
+
+    <div id="store-dots"></div>
 
     <div id="action-row">
       <a      id="btn-call" class="action-btn call off" href="#"><i class="ti ti-phone"></i><span>Call</span></a>
