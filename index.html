@@ -10,6 +10,7 @@
   <link rel="manifest" href="/manifest.json"/>
   <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <title>Spirits Finder</title>
   <style>
     :root {
@@ -345,73 +346,84 @@
     #nav-trigger-btn:hover { background: var(--s1); color: var(--red3); border-color: rgba(200,0,0,0.3); }
     #nav-trigger-btn i { font-size: 15px; }
 
-    /* ── Full-screen Nav Overlay ── */
+    /* ── Full-screen Nav Overlay (Map mode) ── */
     #nav-overlay {
       position: fixed; inset: 0; z-index: 9990;
       background: #070508;
-      background-image: radial-gradient(ellipse 130% 50% at 50% 25%, rgba(120,0,0,0.16) 0%, transparent 65%);
-      display: flex; flex-direction: column; align-items: center;
+      display: flex; flex-direction: column;
       transform: translateY(100%);
       transition: transform 0.5s cubic-bezier(0.34,1.15,0.64,1);
     }
     #nav-overlay.active { transform: translateY(0); }
 
     #nav-header {
-      width: 100%; max-width: 430px; padding: 54px 20px 14px;
+      padding: 54px 18px 14px;
       display: flex; align-items: flex-start; justify-content: space-between;
-      border-bottom: 1px solid rgba(180,0,0,0.12);
-      flex-shrink: 0;
+      background: rgba(7,5,8,0.92); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(180,0,0,0.14);
+      flex-shrink: 0; position: relative; z-index: 1001;
     }
-    #nav-store-name { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; line-height: 1.2; }
-    #nav-store-meta  { font-size: 11px; color: var(--muted2); margin-top: 4px; }
+    #nav-store-name { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    #nav-store-meta  { font-size: 11px; color: var(--muted2); margin-top: 3px; }
     #nav-close-btn {
-      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; margin-left: 14px;
-      background: var(--s2); border: 1px solid var(--border);
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; margin-left: 12px;
+      background: rgba(255,255,255,0.08); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--muted2); font-size: 17px; transition: background 0.15s;
+      cursor: pointer; color: var(--muted2); font-size: 16px; transition: background 0.15s;
     }
-    #nav-close-btn:hover { background: var(--s3); color: var(--text); }
+    #nav-close-btn:hover { background: rgba(255,255,255,0.14); }
 
-    #nav-compass-area {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 10px 20px; width: 100%; max-width: 430px;
-    }
-    #nav-compass-wrap {
-      position: relative; width: 300px; height: 300px;
-      display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
-    }
-    #nav-ring-spin {
-      position: absolute; inset: -10px; border-radius: 50%;
-      border: 1px dashed rgba(140,0,0,0.2);
-      animation: spin-slow 28s linear infinite; pointer-events: none;
-    }
-    #nav-ring-spin::before {
-      content: ''; position: absolute; top: 50%; left: -4px; transform: translateY(-50%);
-      width: 7px; height: 7px; border-radius: 50%; background: var(--red); opacity: 0.55;
-    }
-    #nav-compass-svg { width: 300px; height: 300px; }
-    #nav-needle        { transform-origin: 150px 150px; transition: transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
-    #nav-bearing-arrow { transform-origin: 150px 150px; transition: transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
+    /* Map fills remaining space */
+    #nav-map-area { flex: 1; position: relative; overflow: hidden; }
+    #nav-map { position: absolute; inset: 0; z-index: 1; }
 
-    #nav-dist-display {
-      display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 16px;
-    }
-    #nav-dist-lbl  { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: rgba(180,0,0,0.4); font-weight: 700; }
-    #nav-dist-big  { display: flex; align-items: baseline; gap: 6px; }
-    #nav-dist-val  { font-size: 56px; font-weight: 900; color: var(--red3); font-variant-numeric: tabular-nums; letter-spacing: -3px; line-height: 1; }
-    #nav-dist-unit { font-size: 17px; color: var(--muted2); }
+    /* Leaflet overrides */
+    .leaflet-control-container { display: none; }
+    .leaflet-tile { filter: brightness(0.85) saturate(0.85); }
 
-    #nav-info-strip {
-      display: flex; gap: 0; align-items: stretch;
-      width: calc(100% - 40px); max-width: 390px;
-      background: var(--s1); border: 1px solid var(--border);
-      border-top: 2px solid rgba(180,0,0,0.25);
-      border-radius: 16px; overflow: hidden; flex-shrink: 0; margin-bottom: 30px;
+    /* Floating bottom info panel */
+    #nav-bottom {
+      position: absolute; bottom: 22px; left: 14px; right: 14px; z-index: 1000;
+      background: rgba(7,5,8,0.9);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top: 2px solid rgba(180,0,0,0.4);
+      border-radius: 20px; padding: 14px 0;
+      display: flex; align-items: center;
     }
-    .nav-info-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 14px 10px; }
+    .nav-info-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .nav-info-item + .nav-info-item { border-left: 1px solid var(--border); }
-    .nav-info-val { font-size: 19px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+    .nav-info-val     { font-size: 17px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+    .nav-info-val.big { font-size: 26px; font-weight: 800; color: var(--red3); letter-spacing: -1px; }
     .nav-info-lbl { font-size: 8px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+
+    /* Custom map markers */
+    .nav-user-wrap { width: 50px; height: 50px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .nav-user-cone {
+      position: absolute; width: 0; height: 0;
+      border-left: 9px solid transparent; border-right: 9px solid transparent;
+      border-bottom: 26px solid rgba(52,144,216,0.42);
+      top: 0; left: 50%; margin-left: -9px; transform-origin: 9px 50px;
+    }
+    .nav-user-dot {
+      position: absolute; width: 20px; height: 20px; border-radius: 50%;
+      background: #3490D8; border: 3px solid #fff;
+      box-shadow: 0 0 0 5px rgba(52,144,216,0.22), 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .nav-store-wrap { width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .nav-store-pulse {
+      position: absolute; width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(184,0,0,0.2); animation: map-pulse 1.8s ease-out infinite;
+    }
+    @keyframes map-pulse { 0%{transform:scale(0.4);opacity:1} 100%{transform:scale(1.8);opacity:0} }
+    .nav-store-dot {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #CC0000; border: 3px solid #fff; z-index: 1; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .nav-store-dot i { color: #fff; font-size: 13px; }
 
     /* ── Store swipe dots ── */
     #store-dots {
@@ -600,7 +612,7 @@
 
 </div>
 
-<!-- Full-screen Navigate Overlay -->
+<!-- Full-screen Navigate Overlay (Map mode) -->
 <div id="nav-overlay">
   <div id="nav-header">
     <div>
@@ -609,57 +621,13 @@
     </div>
     <button id="nav-close-btn" onclick="exitNavMode()"><i class="ti ti-x"></i></button>
   </div>
-
-  <div id="nav-compass-area">
-    <div id="nav-compass-wrap">
-      <div id="nav-ring-spin"></div>
-      <svg id="nav-compass-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="150" cy="150" r="145" fill="#070508" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-        <circle cx="150" cy="150" r="100" fill="none" stroke="rgba(255,30,30,0.06)" stroke-width="0.5"/>
-        <circle cx="150" cy="150" r="60"  fill="none" stroke="rgba(255,30,30,0.04)" stroke-width="0.5"/>
-        <!-- Cardinal ticks -->
-        <line x1="150" y1="5"   x2="150" y2="24"  stroke="#B80000" stroke-width="3" stroke-linecap="round"/>
-        <line x1="150" y1="276" x2="150" y2="295" stroke="rgba(255,255,255,0.14)" stroke-width="2" stroke-linecap="round"/>
-        <line x1="5"   y1="150" x2="24"  y2="150" stroke="rgba(255,255,255,0.14)" stroke-width="2" stroke-linecap="round"/>
-        <line x1="276" y1="150" x2="295" y2="150" stroke="rgba(255,255,255,0.14)" stroke-width="2" stroke-linecap="round"/>
-        <!-- Intercardinal ticks -->
-        <line x1="247" y1="53"  x2="240" y2="60"  stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="247" y1="247" x2="240" y2="240" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="53"  y1="247" x2="60"  y2="240" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="53"  y1="53"  x2="60"  y2="60"  stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
-        <!-- Cardinal labels -->
-        <text x="150" y="30"  text-anchor="middle" font-size="15" font-weight="800" fill="#B80000" letter-spacing="1">N</text>
-        <text x="150" y="294" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.18)" font-weight="600">S</text>
-        <text x="294" y="155" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.18)" font-weight="600">E</text>
-        <text x="6"   y="155" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.18)" font-weight="600">W</text>
-        <!-- Needle -->
-        <g id="nav-needle">
-          <polygon points="150,22 157,150 150,163 143,150" fill="#B80000"/>
-          <polygon points="150,278 157,150 150,163 143,150" fill="#1e0808"/>
-          <circle cx="150" cy="150" r="13"  fill="#070508" stroke="rgba(255,60,60,0.1)" stroke-width="1.5"/>
-          <circle cx="150" cy="150" r="5.5" fill="#B80000"/>
-          <circle cx="150" cy="150" r="2"   fill="rgba(255,255,255,0.85)"/>
-        </g>
-        <!-- Bearing arrow -->
-        <g id="nav-bearing-arrow" style="display:none">
-          <line x1="150" y1="150" x2="150" y2="35" stroke="#18A86C" stroke-width="2"   stroke-linecap="round" stroke-dasharray="6 5" opacity="0.3"/>
-          <line x1="150" y1="150" x2="150" y2="65" stroke="#18A86C" stroke-width="3"   stroke-linecap="round"/>
-          <polygon points="150,26 157,44 150,38 143,44" fill="#18A86C"/>
-          <circle cx="150" cy="150" r="10" fill="rgba(24,168,108,0.12)" stroke="#18A86C" stroke-width="1.5"/>
-          <circle cx="150" cy="150" r="4"  fill="#18A86C"/>
-        </g>
-      </svg>
-    </div>
-
-    <div id="nav-dist-display">
-      <div id="nav-dist-lbl">Distance</div>
-      <div id="nav-dist-big">
-        <span id="nav-dist-val">—</span>
-        <span id="nav-dist-unit">km</span>
+  <div id="nav-map-area">
+    <div id="nav-map"></div>
+    <div id="nav-bottom">
+      <div class="nav-info-item">
+        <div class="nav-info-val big" id="nav-dist-val">—</div>
+        <div class="nav-info-lbl" id="nav-dist-lbl">km away</div>
       </div>
-    </div>
-
-    <div id="nav-info-strip">
       <div class="nav-info-item">
         <div class="nav-info-val" id="nav-bearing-text">—°</div>
         <div class="nav-info-lbl">Bearing</div>
@@ -675,6 +643,7 @@
     </div>
   </div>
 </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

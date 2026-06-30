@@ -155,7 +155,7 @@ function onOrient(e) {
     : (360 - (e.alpha || 0)) % 360;
   document.getElementById('needle-group').style.transform = `rotate(${-compassHeading}deg)`;
   updateCompass(targetBearing);
-  updateNavCompass(targetBearing);
+  updateNavMap();
   drawMinimap();
 }
 function attachOrientation() {
@@ -228,7 +228,7 @@ function updateLivePosition(lat, lng) {
 
   checkProximity(active);
   drawMinimap();
-  updateNavCompass(active.bearing);
+  updateNavMap();
   updateNavDistance();
   renderList();
 }
@@ -600,45 +600,104 @@ function animateScan() {
   scanFrameId = requestAnimationFrame(animateScan);
 }
 
-// ── Navigate mode ─────────────────────────────────────────────
+// ── Navigate mode (Pokémon Go style map) ─────────────────────
+let navMap = null, navUserMarker = null, navStoreMarker = null, navRouteLine = null;
+
+function makeUserIcon(heading) {
+  return L.divIcon({
+    className: '',
+    html: `<div class="nav-user-wrap">
+      <div class="nav-user-cone" style="transform:rotate(${heading}deg)"></div>
+      <div class="nav-user-dot"></div>
+    </div>`,
+    iconSize: [50, 50], iconAnchor: [25, 25],
+  });
+}
+function makeStoreIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div class="nav-store-wrap">
+      <div class="nav-store-pulse"></div>
+      <div class="nav-store-dot"><i class="ti ti-bottle"></i></div>
+    </div>`,
+    iconSize: [44, 44], iconAnchor: [22, 22],
+  });
+}
+
+function initNavMap() {
+  const lat = userLat || 20.0059, lng = userLng || 73.7898;
+  const s   = stores[activeIdx];
+  if (!s) return;
+
+  if (!navMap) {
+    navMap = L.map('nav-map', {
+      center: [lat, lng], zoom: 17,
+      zoomControl: false, attributionControl: false,
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, subdomains: 'abcd',
+    }).addTo(navMap);
+
+    navUserMarker  = L.marker([lat, lng],    { icon: makeUserIcon(compassHeading), zIndexOffset: 1000 }).addTo(navMap);
+    navStoreMarker = L.marker([s.lat, s.lng], { icon: makeStoreIcon() }).addTo(navMap);
+    navRouteLine   = L.polyline([[lat, lng], [s.lat, s.lng]], {
+      color: '#CC0000', weight: 2.5, opacity: 0.45, dashArray: '7 10',
+    }).addTo(navMap);
+
+    navMap.fitBounds([[lat, lng], [s.lat, s.lng]], { padding: [60, 60] });
+  } else {
+    // Update for new store
+    navUserMarker.setLatLng([lat, lng]).setIcon(makeUserIcon(compassHeading));
+    navStoreMarker.setLatLng([s.lat, s.lng]);
+    navRouteLine.setLatLngs([[lat, lng], [s.lat, s.lng]]);
+    navMap.fitBounds([[lat, lng], [s.lat, s.lng]], { padding: [60, 60] });
+  }
+  setTimeout(() => navMap?.invalidateSize(), 320);
+}
+
+function updateNavMap() {
+  if (!navMap || !navUserMarker) return;
+  const lat = userLat || 20.0059, lng = userLng || 73.7898;
+  const s   = stores[activeIdx];
+  navUserMarker.setLatLng([lat, lng]).setIcon(makeUserIcon(compassHeading));
+  if (s && navRouteLine) navRouteLine.setLatLngs([[lat, lng], [s.lat, s.lng]]);
+  // Keep user in view
+  if (navMap.getBounds && !navMap.getBounds().contains([lat, lng])) {
+    navMap.panTo([lat, lng], { animate: true, duration: 0.4 });
+  }
+}
+
 function enterNavMode() {
   const s = stores[activeIdx];
   if (!s) return;
   document.getElementById('nav-store-name').textContent = s.name;
-  const parts = [s.rating ? '★ '+s.rating : '', s.isOpen === true ? 'Open now' : s.isOpen === false ? 'Closed' : ''].filter(Boolean);
+  const parts = [s.rating ? '★ ' + s.rating : '', s.isOpen === true ? 'Open now' : s.isOpen === false ? 'Closed' : ''].filter(Boolean);
   document.getElementById('nav-store-meta').textContent = parts.join(' · ');
-  updateNavCompass(targetBearing);
   updateNavDistance();
   document.getElementById('nav-overlay').classList.add('active');
   document.body.style.overflow = 'hidden';
+  setTimeout(initNavMap, 350);
 }
+
 function exitNavMode() {
   document.getElementById('nav-overlay').classList.remove('active');
   document.body.style.overflow = '';
 }
-function updateNavCompass(bearing) {
-  const overlay = document.getElementById('nav-overlay');
-  if (!overlay?.classList.contains('active')) return;
-  const rel    = (bearing - compassHeading + 360) % 360;
-  const needle = document.getElementById('nav-needle');
-  const arrow  = document.getElementById('nav-bearing-arrow');
-  const bt     = document.getElementById('nav-bearing-text');
-  const dt     = document.getElementById('nav-dir-text');
-  if (needle) needle.style.transform = `rotate(${-compassHeading}deg)`;
-  if (arrow)  { arrow.style.transform = `rotate(${rel}deg)`; arrow.style.display = ''; }
-  if (bt) bt.textContent = Math.round(bearing) + '°';
-  if (dt) dt.textContent = dirLabel(bearing);
-}
+
 function updateNavDistance() {
   const overlay = document.getElementById('nav-overlay');
   if (!overlay?.classList.contains('active')) return;
   const s = stores[activeIdx]; if (!s) return;
-  const dv = document.getElementById('nav-dist-val');
-  const du = document.getElementById('nav-dist-unit');
-  const wv = document.getElementById('nav-walk-val');
-  if (dv) dv.textContent = s.dist < 1 ? Math.round(s.dist*1000) : s.dist.toFixed(2);
-  if (du) du.textContent = s.dist < 1 ? 'm' : 'km';
-  if (wv) wv.textContent = Math.round(s.dist*13) + ' min';
+  const dv  = document.getElementById('nav-dist-val');
+  const dl  = document.getElementById('nav-dist-lbl');
+  const wv  = document.getElementById('nav-walk-val');
+  const bt  = document.getElementById('nav-bearing-text');
+  const dt  = document.getElementById('nav-dir-text');
+  if (dv) dv.textContent = s.dist < 1 ? Math.round(s.dist * 1000) : s.dist.toFixed(2);
+  if (dl) dl.textContent = s.dist < 1 ? 'm away' : 'km away';
+  if (wv) wv.textContent = Math.round(s.dist * 13) + ' min';
+  if (bt) bt.textContent = Math.round(s.bearing) + '°';
+  if (dt) dt.textContent = dirLabel(s.bearing);
 }
 
 // ── Minimap ───────────────────────────────────────────────────
