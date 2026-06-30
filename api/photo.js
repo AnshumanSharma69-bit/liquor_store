@@ -4,7 +4,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const upstream = await fetch(
-      `https://google-map-places.p.rapidapi.com/maps/api/place/photo?maxwidth=600&photoreference=${encodeURIComponent(ref)}`,
+      `https://google-map-places.p.rapidapi.com/maps/api/place/photo?maxwidth=600&photo_reference=${encodeURIComponent(ref)}`,
       {
         headers: {
           'x-rapidapi-key':  'd2e7549f2dmsh60ea559d8ec69e5p1199f5jsnbb7bcc8a8a0c',
@@ -14,7 +14,9 @@ module.exports = async function handler(req, res) {
     );
 
     if (!upstream.ok) {
-      return res.status(upstream.status).json({ error: 'Upstream failed', status: upstream.status });
+      const errBody = await upstream.text().catch(() => '');
+      console.error('Photo upstream failed:', upstream.status, errBody.slice(0, 300));
+      return res.status(upstream.status).json({ error: 'Upstream failed', status: upstream.status, body: errBody.slice(0, 300) });
     }
 
     const ct = upstream.headers.get('content-type') || 'image/jpeg';
